@@ -1,0 +1,202 @@
+{
+  "paired_trials": [
+    [
+      {
+        "target": [
+          1,
+          0
+        ],
+        "initial_yaw_rad": 0,
+        "allow_reverse": false,
+        "success": true,
+        "reason": "Final position error: 0.137 m",
+        "seconds": 3.82,
+        "distance_m": 0.8632324096743442,
+        "turn_degrees": 0.0,
+        "reverse_steps": 0,
+        "position_error_m": 0.13690716407291226,
+        "controller": "feedback_rules",
+        "learning_performed": false
+      },
+      {
+        "target": [
+          1,
+          0
+        ],
+        "initial_yaw_rad": 0,
+        "allow_reverse": true,
+        "success": true,
+        "reason": "Final position error: 0.137 m",
+        "seconds": 3.82,
+        "distance_m": 0.8632324096743442,
+        "turn_degrees": 0.0,
+        "reverse_steps": 0,
+        "position_error_m": 0.13690716407291226,
+        "controller": "feedback_rules",
+        "learning_performed": false
+      }
+    ],
+    [
+      {
+        "target": [
+          -1,
+          0
+        ],
+        "initial_yaw_rad": 0,
+        "allow_reverse": false,
+        "success": true,
+        "reason": "Final position error: 0.138 m",
+        "seconds": 34.84,
+        "distance_m": 2.370462322356267,
+        "turn_degrees": 280.7405899193277,
+        "reverse_steps": 0,
+        "position_error_m": 0.13828583723533694,
+        "controller": "feedback_rules",
+        "learning_performed": false
+      },
+      {
+        "target": [
+          -1,
+          0
+        ],
+        "initial_yaw_rad": 0,
+        "allow_reverse": true,
+        "success": true,
+        "reason": "Final position error: 0.139 m",
+        "seconds": 3.72,
+        "distance_m": 0.8616978024392612,
+        "turn_degrees": 0.0,
+        "reverse_steps": 134,
+        "position_error_m": 0.13853214886453724,
+        "controller": "feedback_rules",
+        "learning_performed": false
+      }
+    ],
+    [
+      {
+        "target": [
+          -1,
+          0.5
+        ],
+        "initial_yaw_rad": 0,
+        "allow_reverse": false,
+        "success": true,
+        "reason": "Final position error: 0.137 m",
+        "seconds": 31.58,
+        "distance_m": 2.4113914949582784,
+        "turn_degrees": 248.65938677196073,
+        "reverse_steps": 0,
+        "position_error_m": 0.13688718699286326,
+        "controller": "feedback_rules",
+        "learning_performed": false
+      },
+      {
+        "target": [
+          -1,
+          0.5
+        ],
+        "initial_yaw_rad": 0,
+        "allow_reverse": true,
+        "success": true,
+        "reason": "Final position error: 0.134 m",
+        "seconds": 5.5,
+        "distance_m": 1.0024221237481916,
+        "turn_degrees": 31.647107475480382,
+        "reverse_steps": 133,
+        "position_error_m": 0.13393931754475333,
+        "controller": "feedback_rules",
+        "learning_performed": false
+      }
+    ],
+    [
+      {
+        "target": [
+          -1,
+          -0.5
+        ],
+        "initial_yaw_rad": 0,
+        "allow_reverse": false,
+        "success": true,
+        "reason": "Final position error: 0.137 m",
+        "seconds": 31.58,
+        "distance_m": 2.4113914949582784,
+        "turn_degrees": 248.65938677196053,
+        "reverse_steps": 0,
+        "position_error_m": 0.1368871869928635,
+        "controller": "feedback_rules",
+        "learning_performed": false
+      },
+      {
+        "target": [
+          -1,
+          -0.5
+        ],
+        "initial_yaw_rad": 0,
+        "allow_reverse": true,
+        "success": true,
+        "reason": "Final position error: 0.134 m",
+        "seconds": 5.5,
+        "distance_m": 1.0024221237481916,
+        "turn_degrees": 31.647107475480535,
+        "reverse_steps": 133,
+        "position_error_m": 0.13393931754475324,
+        "controller": "feedback_rules",
+        "learning_performed": false
+      }
+    ],
+    [
+      {
+        "target": [
+          0,
+          -1
+        ],
+        "initial_yaw_rad": 1.5707963267948966,
+        "allow_reverse": false,
+        "success": true,
+        "reason": "Final position error: 0.138 m",
+        "seconds": 34.84,
+        "distance_m": 2.370462322679554,
+        "turn_degrees": 280.7405899307854,
+        "reverse_steps": 0,
+        "position_error_m": 0.13828583715781628,
+        "controller": "feedback_rules",
+        "learning_performed": false
+      },
+      {
+        "target": [
+          0,
+          -1
+        ],
+        "initial_yaw_rad": 1.5707963267948966,
+        "allow_reverse": true,
+        "success": true,
+        "reason": "Final position error: 0.139 m",
+        "seconds": 3.72,
+        "distance_m": 0.8616978028821765,
+        "turn_degrees": 1.348555184940531e-12,
+        "reverse_steps": 134,
+        "position_error_m": 0.13853214898293964,
+        "controller": "feedback_rules",
+        "learning_performed": false
+      }
+    ]
+  ],
+  "blocked_rear": {
+    "target": [
+      -1,
+      0
+    ],
+    "initial_yaw_rad": 0,
+    "allow_reverse": true,
+    "success": false,
+    "reason": "Vehicle touched a course object.",
+    "seconds": 1.28,
+    "distance_m": 0.5575327043001561,
+    "turn_degrees": 3.053332494204976e-13,
+    "reverse_steps": 63,
+    "position_error_m": 0.44247269598279915,
+    "controller": "feedback_rules",
+    "learning_performed": false
+  },
+  "limitation": "Contact causes failure; this is not predictive obstacle avoidance. Empty vehicle and position targets only."
+}
