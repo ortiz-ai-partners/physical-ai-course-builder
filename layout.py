@@ -56,6 +56,38 @@ def validate_layout(value):
               'grid_m': GRID, 'blocks': result}
     if checked:
         output['ramps'] = checked
+    slopes = value.get('slopes', [])
+    if not isinstance(slopes, list) or len(slopes) > 2:
+        raise ValueError('単体坂は上り・下りを1個ずつ配置できます。')
+    from slope_parts import half_extents
+    normalized, seen = [], set()
+    footprints = [(b['x'], b['y'], 0.22, 0.24) for b in result]
+    footprints += [(r['x'], r['y'], 0.5, 1.8) for r in checked]
+    for part in slopes:
+        if not isinstance(part, dict) or part.get('kind') not in ('up', 'down'):
+            raise ValueError('単体坂の種類が違います。')
+        kind = part['kind']
+        if part.get('id') != kind+'_1' or kind in seen:
+            raise ValueError('上り坂・下り坂は1個ずつです。')
+        seen.add(kind)
+        x, y, yaw = part.get('x'), part.get('y'), part.get('yaw', 0)
+        if any(type(v) not in (int, float) or not math.isfinite(v) for v in (x, y, yaw)):
+            raise ValueError('単体坂の位置と向きは有限の数値にしてください。')
+        if not (-1 <= x <= 4 and -3 <= y <= 3) or yaw not in (0, 90, 180, 270):
+            raise ValueError('単体坂はエリア内、向きは90度刻みにしてください。')
+        if any(abs(v/GRID-round(v/GRID)) > 1e-7 for v in (x, y)):
+            raise ValueError('単体坂は25cmのマス目に合わせてください。')
+        if part.get('height', STANDARD_TOP_HEIGHT) != STANDARD_TOP_HEIGHT:
+            raise ValueError('単体坂の天面は共通の44cmです。')
+        clean = {'id': kind+'_1', 'kind': kind, 'x': float(x), 'y': float(y),
+                 'yaw': int(yaw), 'height': STANDARD_TOP_HEIGHT}
+        hx, hy = half_extents(clean)
+        if any(abs(x-bx) < hx+bhx-1e-8 and abs(y-by) < hy+bhy-1e-8 for bx, by, bhx, bhy in footprints):
+            raise ValueError('単体坂と他のパーツが重なっています。')
+        footprints.append((x, y, hx, hy))
+        normalized.append(clean)
+    if normalized:
+        output['slopes'] = normalized
     return output
 
 
@@ -66,10 +98,15 @@ def load_layout(path):
 def preview_xml(layout, scene_path, construction=False):
     """Render the desired END state, not an executed construction result."""
     layout = validate_layout(layout)
-    if construction and layout.get('ramps'):
+    if construction and (layout.get('ramps') or layout.get('slopes')):
         raise ValueError('坂道付き配置の施工はまだ未対応です。3Dプレビューで確認してください。')
     root = ET.parse(scene_path).getroot()
     world = root.find('worldbody')
+    if layout.get('slopes'):
+        from slope_parts import add_slope
+        for part in layout['slopes']:
+            add_slope(root, part)
+        world.find("body[@name='dozer']").set('pos', '-4.5 3.9 0.30')
     if layout.get('ramps'):
         from portable_ramp import add_portable_ramp
         ramp = layout['ramps'][0]

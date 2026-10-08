@@ -27,7 +27,26 @@ def add_portable_ramp(root, x=-1.5, y=0.0, height=STANDARD_TOP_HEIGHT):
                   friction='1.2 0.005 0.0001')
 
 
-def portable_xml(scene_path, height=STANDARD_TOP_HEIGHT):
+def validate_ramp_build(layout):
+    from layout import validate_layout
+    layout = validate_layout(layout)
+    if layout.get('slopes'):
+        raise ValueError('単体坂の自動施工はまだ未対応です。上り・下りを外して実行してください。')
+    ramps = layout.get('ramps', [])
+    if len(ramps) != 1:
+        raise ValueError('施工する坂道を1個配置してください。')
+    ramp = ramps[0]
+    if not (0.5 <= ramp['x'] <= 2 and ramp['y'] == 0 and ramp['height'] == STANDARD_TOP_HEIGHT):
+        raise ValueError('坂の施工はX=0.5〜2m、Y=0、天面44cmに対応しています。')
+    if {(b['x'], b['y']) for b in layout['blocks']} != {(4.0, 3.0), (4.0, -3.0)}:
+        raise ValueError('この施工では箱を右端の待機位置（X=4、Y=±3）に置いてください。「坂道コースの例を置く」で準備できます。')
+    return layout
+
+
+def portable_xml(scene_path, height=STANDARD_TOP_HEIGHT, layout=None):
+    if layout is not None:
+        layout = validate_ramp_build(layout)
+        height = layout['ramps'][0]['height']
     root = ET.parse(scene_path).getroot()
     world = root.find('worldbody')
     for body in list(world.findall('body')):
@@ -35,13 +54,23 @@ def portable_xml(scene_path, height=STANDARD_TOP_HEIGHT):
             world.remove(body)
     for name, y in [('block_1', 3.5), ('block_2', -3.5)]:
         world.find(f"body[@name='{name}']").set('pos', f'4 {y} 0.26')
+    if layout is not None:
+        for block in layout['blocks']:
+            world.find(f"body[@name='{block['id']}']").set('pos', f"{block['x']} {block['y']} 0.26")
+        target = layout['ramps'][0]
+        ET.SubElement(world, 'geom', type='box', pos=f"{target['x']} 0 0.002",
+                      size='0.5 1.8 0.002', contype='0', conaffinity='0', rgba='0.4 0.8 0.5 0.3')
     add_portable_ramp(root, height=height)
     return ET.tostring(root, encoding='unicode')
 
 
 class PortablePilot:
-    def __init__(self, sim):
-        self.pilot = Transport(sim, {'x': 1.5, 'y': 0}, 'portable_ramp', 1.28, 2.05)
+    def __init__(self, sim, layout=None):
+        if layout is not None:
+            layout = validate_ramp_build(layout)
+        self.target = layout['ramps'][0] if layout else {'x': 1.5, 'y': 0}
+        self.pilot = Transport(sim, self.target, 'portable_ramp', 1.28, 2.05)
+        self.initial_boxes = {n: sim.data.body(n).xpos.copy() for n in ('block_1', 'block_2')}
         self.phase = 'TRANSPORT'
         self.stage = self.phase
         self.reason = ''
@@ -71,6 +100,9 @@ class PortablePilot:
         if self.elapsed > 20000 or not np.isfinite(sim.data.qpos).all():
             return self.stop('Time limit or invalid state')
         ramp = sim.data.body('portable_ramp')
+        for name, origin in self.initial_boxes.items():
+            if np.linalg.norm(sim.data.body(name).xpos-origin) > 0.015:
+                return self.stop('Waiting box moved: '+name)
         if self.placed is not None and np.linalg.norm(ramp.xpos - self.placed) > 0.04:
             return self.stop('Placed ramp moved too far')
         if self.phase == 'TRANSPORT':
@@ -88,7 +120,7 @@ class PortablePilot:
             if sim.lift_target < 0.49:
                 return (0, 0, 1)
             self.phase = 'APPROACH'
-            self.pilot = Navigator(sim, [[-1, 0], [-1, -3], [1.5, -3]])
+            self.pilot = Navigator(sim, [[-1, 0], [-1, -3], [self.target['x'], -3]])
         if self.phase in ('APPROACH', 'CROSS'):
             action = self.pilot.action(sim)
             self.stage = self.phase + ': ' + self.pilot.stage
@@ -104,7 +136,7 @@ class PortablePilot:
                     return self.stop(self.pilot.reason)
                 if self.phase == 'APPROACH':
                     self.phase = 'CROSS'
-                    self.pilot = Navigator(sim, [[1.5, 3]])
+                    self.pilot = Navigator(sim, [[self.target['x'], 3]])
                 else:
                     self.success = self.max_rise > self.height*0.8 and self.contacts == self.ramp_ids
                     return self.stop(f'Lift {self.lift_m:.3f} m, carry {self.carry_m:.3f} m, climb {self.max_rise:.3f} m')
