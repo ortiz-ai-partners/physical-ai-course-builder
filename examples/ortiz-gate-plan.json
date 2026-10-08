@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "ふたつの灯台ゲート",
+  "rationale": "赤と青の箱を灯台に見立て、間の通路を抜けて右奥へ進む。最初は車両とフォークの幅に余裕を持たせ、箱の中心を2m離し、直線で門を抜けた後に旋回する。ロボットの物理的な施工は次の工程なので、今回は完成形を初期配置として走行だけを評価する。",
+  "provenance": {
+    "source": "AI planning in the active Codex conversation",
+    "persona": "Ortiz",
+    "model_id": "not verified",
+    "inference_mode": "interactive chat; saved plan snapshot",
+    "human_request": "AIがコースを作り、その中を自動で走る。AIはこのチャットを使いたい。"
+  },
+  "layout": {
+    "schema": 1,
+    "blocks": [
+      {"id": "block_1", "x": 1.5, "y": 1.0, "yaw": 0},
+      {"id": "block_2", "x": 1.5, "y": -1.0, "yaw": 0}
+    ]
+  },
+  "waypoints": [[-1.5, 0], [0, 0], [2.8, 0], [3.5, 0.75]]
+}

@@ -1,0 +1,14 @@
+{
+  "source": "User-provided facility description in project chat",
+  "ball_pool": {
+    "ball_count": 1500,
+    "ball_size_description": "頭より二回り大きい",
+    "ball_diameter_m": null,
+    "sea_creature_plush_count": 14,
+    "species": null,
+    "pool_dimensions_m": null,
+    "simulation_status": "not implemented; start with a reduced contact test and benchmark before full count"
+  },
+  "building_dimensions_m": null,
+  "reference_images": "User authorized image search for facility appearance; no measurements verified"
+}
