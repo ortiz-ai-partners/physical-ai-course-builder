@@ -21,8 +21,9 @@
 <div class="row"><span class="dot" style="background:#dd6653"></span>赤い箱 <span id="pos1" class="value"></span></div>
 <div class="row"><span class="dot" style="background:#4783ae"></span>青い箱 <span id="pos2" class="value"></span></div>
 <p id="gap" class="hint"></p><button id="undo">ひとつ戻す</button><button id="reset">門の配置に戻す</button><button id="save" class="primary">この配置を保存</button><button id="preview">保存して3Dで見る</button>
+<button id="build" class="primary">赤い箱を自動で運ぶ</button><p class="hint">直線運搬の実験：車両と赤い箱を同じ進路上に置いて開始します。青い箱は今回運びません。Pで一時停止できます。</p>
 <div id="status" role="status" aria-live="polite">配置を読み込んでいます…</div>
-<p class="hint">3Dは完成形のプレビューです。車両が組み立てた結果ではありません。自動施工・AIの命名は次の段階で追加します。</p></aside></div>
+<p class="hint">3Dは完成形のプレビューです。車両が組み立てた結果ではありません。赤い箱の直線運搬は別の実行ボタンから試せます。コース全体の施工・AIの命名はこれからです。</p></aside></div>
 </main>
 <script>
 const initial=()=>({schema:1,blocks:[{id:'block_1',x:1.5,y:.75,yaw:0},{id:'block_2',x:1.5,y:-.75,yaw:0}]});
@@ -33,13 +34,14 @@ const svg=document.querySelector('#canvas'),status=document.querySelector('#stat
 function message(text,error=false){status.textContent=directFile?launchHelp:text;status.classList.toggle('error',directFile||error)}
 function invalid(){const [a,b]=model.blocks;return Math.abs(a.x-b.x)<.44&&Math.abs(a.y-b.y)<.48}
 function remember(){history.push(JSON.stringify(model));if(history.length>50)history.shift()}
-function draw(){model.blocks.forEach((b,i)=>{document.getElementById(b.id).setAttribute('transform',`translate(${b.x} ${-b.y})`);document.getElementById('pos'+(i+1)).textContent=`${b.x.toFixed(2)}, ${b.y.toFixed(2)} m`});const [a,b]=model.blocks;document.querySelector('#gap').textContent=a.x===b.x?`上下の箱のすき間：${Math.max(0,Math.abs(a.y-b.y)-.48).toFixed(2)} m（ボールの直径は0.40 m）`:'箱のX位置をそろえると、まっすぐな門になります。';document.querySelector('#undo').disabled=!history.length||busy;for(const id of ['save','preview'])document.getElementById(id).disabled=directFile||busy||invalid();if(invalid())message('箱が重なっています。少し離して置いてね。',true)}
+function draw(){model.blocks.forEach((b,i)=>{document.getElementById(b.id).setAttribute('transform',`translate(${b.x} ${-b.y})`);document.getElementById('pos'+(i+1)).textContent=`${b.x.toFixed(2)}, ${b.y.toFixed(2)} m`});const [a,b]=model.blocks;document.querySelector('#gap').textContent=a.x===b.x?`上下の箱のすき間：${Math.max(0,Math.abs(a.y-b.y)-.48).toFixed(2)} m（ボールの直径は0.40 m）`:'箱のX位置をそろえると、まっすぐな門になります。';document.querySelector('#undo').disabled=!history.length||busy;for(const id of ['save','preview','build'])document.getElementById(id).disabled=directFile||busy||invalid();if(invalid())message('箱が重なっています。少し離して置いてね。',true)}
 function move(b,x,y){b.x=Math.max(-1,Math.min(4,Math.round(x*4)/4));b.y=Math.max(-3,Math.min(3,Math.round(y*4)/4));message('配置を変更しました。保存すると次回も開けます。');draw()}
 function point(e){const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());return {x:p.x,y:-p.y}}
 for(const b of model.blocks){const el=document.getElementById(b.id);el.addEventListener('pointerdown',e=>{if(busy)return;const block=model.blocks.find(x=>x.id===el.id),p=point(e);remember();drag={id:el.id,dx:block.x-p.x,dy:block.y-p.y};el.setPointerCapture(e.pointerId);el.focus();e.preventDefault()});el.addEventListener('pointermove',e=>{if(!drag||drag.id!==el.id)return;const p=point(e);move(model.blocks.find(x=>x.id===el.id),p.x+drag.dx,p.y+drag.dy)});el.addEventListener('pointerup',()=>{drag=null;draw()});el.addEventListener('pointercancel',()=>{drag=null;draw()});el.addEventListener('keydown',e=>{const d={ArrowLeft:[-.25,0],ArrowRight:[.25,0],ArrowUp:[0,.25],ArrowDown:[0,-.25]}[e.key];if(!d||busy)return;e.preventDefault();remember();const b=model.blocks.find(x=>x.id===el.id);move(b,b.x+d[0],b.y+d[1])})}
 document.querySelector('#undo').onclick=()=>{if(history.length){model=JSON.parse(history.pop());message('ひとつ前の配置に戻しました。');draw()}};
 document.querySelector('#reset').onclick=()=>{if(busy)return;remember();model=initial();message('門の配置に戻しました。保存はまだしていません。');draw()};
-async function save(preview){if(directFile||busy||invalid())return;busy=true;draw();try{const r=await fetch(preview?'/api/preview':'/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(model)});const data=await r.json();if(!r.ok)throw Error(data.error);message(preview?'保存しました。別ウィンドウで3Dプレビューを開きます。':'保存できました。次回はこの配置から始められます。')}catch(e){message(e instanceof TypeError?'保存先につながりません。起動用のウィンドウを閉じた場合は、起動ファイルを開き直し、新しく開いた設計画面を使ってください。':e.message,true)}finally{busy=false;draw()}}
+async function save(preview,build=false){if(directFile||busy||invalid())return;busy=true;draw();try{const r=await fetch(build?'/api/build':preview?'/api/preview':'/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(model)});const data=await r.json();if(!r.ok)throw Error(data.error);message(build?'保存しました。赤い箱の直線運搬を別ウィンドウで実行します。':preview?'保存しました。別ウィンドウで3Dプレビューを開きます。':'保存できました。次回はこの配置から始められます。')}catch(e){message(e instanceof TypeError?'保存先につながりません。起動用のウィンドウを閉じた場合は、起動ファイルを開き直し、新しく開いた設計画面を使ってください。':e.message,true)}finally{busy=false;draw()}}
+document.querySelector('#build').onclick=()=>save(false,true);
 document.querySelector('#save').onclick=()=>save(false);document.querySelector('#preview').onclick=()=>save(true);
 if(directFile){message(launchHelp,true)}else fetch('/api/layout').then(r=>{if(!r.ok)throw Error();return r.json()}).then(data=>{model=data;message('箱をドラッグして、作りたい形に並べてね。');draw()}).catch(()=>{message('読み込めませんでした。設計室を起動し直してください。',true)});draw();
 </script></html>

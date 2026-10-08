@@ -39,15 +39,23 @@ def load_layout(path):
     return validate_layout(json.loads(Path(path).read_text(encoding='utf-8-sig')))
 
 
-def preview_xml(layout, scene_path):
+def preview_xml(layout, scene_path, construction=False):
     """Render the desired END state, not an executed construction result."""
     layout = validate_layout(layout)
     root = ET.parse(scene_path).getroot()
     world = root.find('worldbody')
     for body in list(world.findall('body')):
-        if body.get('name') in ('block_3', 'block_4', 'ball'):
+        if body.get('name') in (('block_2', 'block_3', 'block_4', 'ball') if construction else ('block_3', 'block_4', 'ball')):
             world.remove(body)
     for block in layout['blocks']:
         body = world.find(f"body[@name='{block['id']}']")
-        body.set('pos', f"{block['x']} {block['y']} 0.26")
+        if body is not None:
+            x = -1.5 if construction else block['x']
+            body.set('pos', f"{x} {block['y']} 0.26")
+    if construction:
+        target = layout['blocks'][0]
+        world.find("body[@name='dozer']").set('pos', f"-3 {target['y']} 0.30")
+        ET.SubElement(world, 'geom', {'name': 'build_target', 'type': 'box',
+            'pos': f"{target['x']} {target['y']} 0.006", 'size': '0.27 0.29 0.005',
+            'contype': '0', 'conaffinity': '0', 'rgba': '0.95 0.35 0.3 0.35'})
     return ET.tostring(root, encoding='unicode')

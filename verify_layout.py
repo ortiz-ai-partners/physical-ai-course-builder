@@ -6,6 +6,7 @@ import threading
 import urllib.request
 import urllib.error
 import json
+from unittest.mock import patch, Mock
 from pathlib import Path
 import designer
 import numpy as np
@@ -43,6 +44,18 @@ class LayoutChecks(unittest.TestCase):
                         post(data, origin)
                     self.assertEqual(error.exception.code, code)
                 self.assertEqual(len(list((designer.ROOT / 'designs').glob('layout_*.json'))), 1)
+                process = Mock()
+                process.poll.return_value = None
+                with patch('designer.subprocess.Popen', return_value=process) as launch:
+                    req = urllib.request.Request(url + '/api/build', data=json.dumps(EXAMPLE).encode(),
+                        headers={'Origin': url, 'Content-Type': 'application/json'})
+                    with client.open(req, timeout=5) as response:
+                        self.assertTrue(json.load(response)['build'])
+                    self.assertIn('--build', launch.call_args.args[0])
+                    with self.assertRaises(urllib.error.HTTPError) as error:
+                        client.open(req, timeout=5)
+                    self.assertEqual(error.exception.code, 409)
+                    self.assertEqual(launch.call_count, 1)
             finally:
                 server.shutdown()
                 server.server_close()
