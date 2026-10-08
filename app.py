@@ -118,7 +118,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False):
         if screenshot:
             glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
         glfw.window_hint(glfw.SAMPLES, 4)
-        title = 'Auto Transport | RED BOX ONLY' if construction else 'Layout Preview | NOT a construction result' if layout else 'Bulldozer Lab | WASD + Space / Shift'
+        title = 'Auto Transport | Faster cruise / RED BOX ONLY' if construction else 'Layout Preview | NOT a construction result' if layout else 'Bulldozer Lab | WASD + Space / Shift'
         window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
