@@ -38,19 +38,22 @@ def load_plan(path):
     return validate_plan(json.loads(Path(path).read_text(encoding='utf-8-sig')))
 
 
-def evaluate(path):
+def evaluate(path, assemble=False):
     from app import Simulation
     from navigation import Navigator
     plan = load_plan(path)
-    sim = Simulation(layout=plan['layout'])
-    pilot = Navigator(sim, plan['waypoints'])
+    if assemble:
+        from assembly import Assembly, validate_gate
+        validate_gate(plan)
+    sim = Simulation(layout=plan['layout'], construction='gate' if assemble else False)
+    pilot = Assembly(sim, plan) if assemble else Navigator(sim, plan['waypoints'])
     while not pilot.done:
         sim.step(*pilot.action(sim))
     return {'schema': 1, 'plan_sha256': hashlib.sha256(Path(path).read_bytes()).hexdigest(),
-            'plan_name': plan['name'], 'phase': 'drive_existing_course',
-            'construction_performed': False, 'fresh_ai_inference': False,
+            'plan_name': plan['name'], 'phase': 'assemble_and_drive' if assemble else 'drive_existing_course',
+            'construction_performed': assemble, 'placed_boxes': pilot.results if assemble else [], 'fresh_ai_inference': False,
             'controller': 'waypoint_feedback_rules', 'success': pilot.success,
-            'reason': pilot.reason, 'visited_waypoints': pilot.index,
+            'reason': pilot.reason, 'visited_waypoints': getattr(pilot.pilot, 'index', 0) if assemble else pilot.index,
             'simulation_seconds': pilot.elapsed * 0.02,
             'final_state': sim.observe(),
             'note': 'The AI authored the plan in chat. This execution evaluates its saved snapshot.'}
@@ -60,8 +63,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('plan', type=Path)
     parser.add_argument('--report', type=Path, required=True)
+    parser.add_argument('--assemble', action='store_true')
     args = parser.parse_args()
-    report = evaluate(args.plan)
+    report = evaluate(args.plan, args.assemble)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps({k: v for k, v in report.items() if k != 'final_state'}, ensure_ascii=False, indent=2))

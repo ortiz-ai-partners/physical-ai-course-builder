@@ -126,10 +126,13 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         glfw.swap_interval(1)
         sim = Simulation(layout=layout, construction=construction)
         pilot = None
-        if construction:
+        if construction == 'gate':
+            from assembly import Assembly
+            pilot = Assembly(sim, driving_plan)
+        elif construction:
             from transport import Transport
             pilot = Transport(sim, layout['blocks'][0])
-        if driving_plan:
+        if driving_plan and construction != 'gate':
             from navigation import Navigator
             pilot = Navigator(sim, driving_plan['waypoints'])
         if pilot:
@@ -273,6 +276,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                 left = 'AUTO TRANSPORT / RULE CONTROL\n\nRED BOX ONLY / STRAIGHT LANE\nP: pause / resume | Esc: close\nView: 1 / 2 | Mouse: camera'
                 if driving_plan:
                     left = 'AI PLAN REPLAY / RULE EXECUTION\n\nExisting course / not constructed here\nNo fresh inference during replay\nP: pause / resume | Esc: close'
+                if construction == 'gate':
+                    left = 'ASSEMBLE + DRIVE / RULE EXECUTION\n\nTwo boxes / one continuous simulation\nNo teleport during execution\nP: pause / resume | Esc: close'
                 right = ''
                 ui['message'] = f"{pilot.stage} {'(PAUSED)' if ui['paused'] else ''} | {pilot.reason}"
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
@@ -305,7 +310,10 @@ if __name__ == '__main__':
     parser.add_argument('--layout', type=Path, help='Preview a saved target layout; no driving or recording.')
     parser.add_argument('--build', action='store_true', help='Carry red box in an initially aligned straight lane.')
     parser.add_argument('--plan', type=Path, help='Replay a saved chat-authored plan on an existing course.')
+    parser.add_argument('--assemble', action='store_true', help='Build both boxes then drive, without resetting the scene.')
     args = parser.parse_args()
+    if args.assemble and not args.plan:
+        parser.error('--assemble requires --plan')
     if args.plan and (args.layout or args.build):
         parser.error('--plan cannot be combined with --layout or --build')
     if args.build and not args.layout:
@@ -320,4 +328,4 @@ if __name__ == '__main__':
         from ai_plan import load_plan
         driving_plan = load_plan(args.plan)
         target_layout = driving_plan['layout']
-    raise SystemExit(run(args.screenshot, args.smoke, target_layout, args.build, driving_plan))
+    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan))
