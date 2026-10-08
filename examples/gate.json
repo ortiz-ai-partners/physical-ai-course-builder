@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "kind": "target_layout",
+  "units": "m",
+  "grid_m": 0.25,
+  "blocks": [
+    {"id": "block_1", "x": 1.5, "y": 0.75, "yaw": 0},
+    {"id": "block_2", "x": 1.5, "y": -0.75, "yaw": 0}
+  ]
+}

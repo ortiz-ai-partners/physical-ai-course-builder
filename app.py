@@ -22,10 +22,14 @@ CONTROL_DT = 0.02
 
 
 class Simulation:
-    def __init__(self, attachment='fork'):
+    def __init__(self, attachment='fork', layout=None):
         self.attachment = attachment
         self.scene_path = ROOT / ('scene_fork_tracks.xml' if attachment == 'fork' else 'scene_tracks.xml')
-        self.model = mujoco.MjModel.from_xml_path(str(self.scene_path))
+        if layout is None:
+            self.model = mujoco.MjModel.from_xml_path(str(self.scene_path))
+        else:
+            from layout import preview_xml
+            self.model = mujoco.MjModel.from_xml_string(preview_xml(layout, self.scene_path))
         self.data = mujoco.MjData(self.model)
         self.tracks = TrackAnimation(self.model)
         self.lift_target = 0.0
@@ -45,6 +49,9 @@ class Simulation:
         mujoco.mj_forward(self.model, self.data)
 
     def observe(self):
+        # mj_step leaves derived body poses at the previous integration stage.
+        # Synchronize them before recording, including between render frames.
+        mujoco.mj_forward(self.model, self.data)
         return {
             'time': float(self.data.time),
             'qpos': self.data.qpos.tolist(),
@@ -52,7 +59,7 @@ class Simulation:
             'lift_target': self.lift_target,
             'objects': {name: {'position': self.data.body(name).xpos.tolist(),
                                'quaternion_wxyz': self.data.body(name).xquat.tolist()}
-                        for name in OBJECTS},
+                        for name in OBJECTS if mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, name) >= 0},
         }
 
     def step(self, forward=0.0, turn=0.0, lift=0.0):
@@ -101,7 +108,7 @@ class Recorder:
             self.file = None
 
 
-def run(screenshot=None, smoke=False):
+def run(screenshot=None, smoke=False, layout=None):
     if not glfw.init():
         raise RuntimeError('OpenGL window could not initialize.')
     window = None
@@ -111,12 +118,13 @@ def run(screenshot=None, smoke=False):
         if screenshot:
             glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
         glfw.window_hint(glfw.SAMPLES, 4)
-        window = glfw.create_window(1280, 800, 'Bulldozer Lab | WASD + Space / Shift', None, None)
+        title = 'Layout Preview | NOT a construction result' if layout else 'Bulldozer Lab | WASD + Space / Shift'
+        window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
         glfw.make_context_current(window)
         glfw.swap_interval(1)
-        sim = Simulation()
+        sim = Simulation(layout=layout)
         camera = mujoco.MjvCamera()
         mujoco.mjv_defaultCamera(camera)
         camera.lookat[:] = [-0.3, 0, 0.1]
@@ -127,12 +135,14 @@ def run(screenshot=None, smoke=False):
         scene = mujoco.MjvScene(sim.model, maxgeom=2000)
         context = mujoco.MjrContext(sim.model, mujoco.mjtFontScale.mjFONTSCALE_150)
         keys = set()
-        ui = {'paused': False, 'follow': False, 'message': 'Lower forks, slide under a box, then Space to lift. Q = slow drive.',
+        ui = {'paused': bool(layout), 'follow': False, 'message': 'Lower forks, slide under a box, then Space to lift. Q = slow drive.',
               'mouse': None}
 
         def on_key(win, key, scancode, action, mods):
             nonlocal sim, scene, context
             if action == glfw.PRESS:
+                if layout and key not in (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2):
+                    return
                 keys.add(key)
                 if key == glfw.KEY_ESCAPE:
                     glfw.set_window_should_close(win, True)
@@ -242,6 +252,10 @@ def run(screenshot=None, smoke=False):
             status = 'PAUSED' if ui['paused'] else ('RECORDING' if recorder.file else 'MANUAL / NO AI')
             left = 'TRACKED DOZER\n\nDrive\nLift\nAttachment\nRecord\nReset / Pause\nCamera\nView\nExit'
             right = f'{status}\n\nW A S D / hold Q: slow\nSpace UP / Shift DOWN\nT: {sim.attachment.upper()} (resets scene)\nF ({recorder.frames} steps)\nR / P\nDrag / wheel / C follow\n1 overview / 2 top\nEsc'
+            if layout:
+                left = 'TARGET LAYOUT PREVIEW\n\nDesired final positions only\nNo autonomous construction / No AI\n\nCamera: drag / wheel\nView: 1 overview / 2 top\nClose: Esc'
+                right = ''
+                ui['message'] = 'Design preview. Boxes were placed directly for visualization, not moved by the robot.'
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
                                viewport, left, right, context)
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_BOTTOMLEFT,
@@ -269,5 +283,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--screenshot', type=Path)
     parser.add_argument('--smoke', action='store_true')
+    parser.add_argument('--layout', type=Path, help='Preview a saved target layout; no driving or recording.')
     args = parser.parse_args()
-    raise SystemExit(run(args.screenshot, args.smoke))
+    if args.layout:
+        from layout import load_layout
+        target_layout = load_layout(args.layout)
+    else:
+        target_layout = None
+    raise SystemExit(run(args.screenshot, args.smoke, target_layout))

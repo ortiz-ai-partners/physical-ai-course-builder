@@ -68,12 +68,17 @@ def main():
                                 'action': [1, 0, 0], 'actuator_command': command.tolist(),
                                 'next_state': sim.observe()})
                 recorder.frames += 1
+                # Rendering recomputes derived poses: it must not change observations.
+                before_render = sim.observe()
+                sim.update_tracks()
+                assert sim.observe() == before_render
             recorder.stop()
             rows = [json.loads(line) for line in recorder.path.read_text(encoding='utf-8').splitlines()]
             assert len(rows) == 12 and rows[-1]['frames'] == 10
             assert all(abs(row['next_state']['time'] - row['state']['time'] - app.CONTROL_DT) < 1e-8
                        for row in rows[1:-1])
             assert rows[1]['state']['qpos'] != rows[-2]['state']['qpos']
+            assert all(a['next_state'] == b['state'] for a, b in zip(rows[1:-2], rows[2:-1]))
             results['recording_transitions_checked'] = 10
         finally:
             app.ROOT = original_root
