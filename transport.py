@@ -8,12 +8,15 @@ import numpy as np
 
 
 class Transport:
-    def __init__(self, sim, target, box_name="block_1", pickup_distance=1.0, release_distance=1.72, lane_y=None):
+    def __init__(self, sim, target, box_name="block_1", pickup_distance=1.0, release_distance=1.72, lane_y=None, steering_gain=3.0, align_before_lift=False):
         self.box_name = box_name
         self.pickup_distance = pickup_distance
         self.release_distance = release_distance
         self.target = np.array([target['x'], target['y']], dtype=float)
         self.lane_y = self.target[1] if lane_y is None else float(lane_y)
+        self.steering_gain = float(steering_gain)
+        self.align_before_lift = align_before_lift
+        self.aligned_steps = 0
         self.stage = 'INSERT'
         self.elapsed = 0
         self.stage_steps = 0
@@ -44,7 +47,7 @@ class Transport:
             w,x,y,z = sim.data.body('dozer').xquat
             yaw = math.atan2(2*(w*z+x*y),1-2*(y*y+z*z))
             lateral = self.lane_y - sim.data.body('dozer').xpos[1]
-            turn = float(np.clip(3.0 * (math.atan2(lateral, 0.7) - yaw), -0.8, 0.8))
+            turn = float(np.clip(self.steering_gain * (math.atan2(lateral, 0.7) - yaw), -0.8, 0.8))
         return (self.drive_command, turn, lift)
 
     def desired_action(self, sim):
@@ -65,9 +68,20 @@ class Transport:
             return (0, 0, 0)
         if self.stage == 'INSERT':
             if box[0] - base[0] <= self.pickup_distance:
-                self.change('LIFT')
+                self.change('ALIGN_FORK' if self.align_before_lift else 'LIFT')
             else:
                 return (0.25, 0, 0)
+        if self.stage == 'ALIGN_FORK':
+            w,x,y,z = sim.data.body('dozer').xquat
+            yaw = math.atan2(2*(w*z+x*y),1-2*(y*y+z*z))
+            if abs(yaw) > 0.004:
+                self.aligned_steps = 0
+                return (0, -math.copysign(min(.9,max(.65,abs(yaw)*2)),yaw), 0)
+            self.aligned_steps += 1
+            if self.aligned_steps >= 30:
+                self.lane_y = float(base[1])
+                self.change('LIFT')
+            return (0,0,0)
         if self.stage == 'LIFT':
             if sim.lift_target < 0.25:
                 return (0, 0, 1)

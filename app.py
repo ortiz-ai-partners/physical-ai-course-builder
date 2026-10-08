@@ -116,7 +116,7 @@ class Recorder:
             self.file = None
 
 
-def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None):
+def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False):
     if not glfw.init():
         raise RuntimeError('OpenGL window could not initialize.')
     window = None
@@ -133,6 +133,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             title = 'Portable Ramp | Lift, place and cross / rule control'
         if move_slope:
             title = 'Single slope transport | '+move_slope
+        if build_slopes:
+            title = 'Build two slopes and cross | rule control'
         window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
@@ -142,6 +144,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         if move_slope:
             from slope_transport import slope_transport_xml
             custom_xml = slope_transport_xml(ROOT/'scene_fork_tracks.xml', move_slope)
+        if build_slopes:
+            from slope_assembly import assembly_xml
+            custom_xml = assembly_xml(ROOT/'scene_fork_tracks.xml')
         sim = Simulation(layout=layout, construction=construction, ramp_height=0.35 if ramp else None, portable_ramp=portable_ramp, scene_xml=custom_xml)
         pilot = None
         if construction == 'gate':
@@ -162,6 +167,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         if move_slope:
             from slope_transport import slope_pilot
             pilot = slope_pilot(sim, move_slope)
+        if build_slopes:
+            from slope_assembly import SlopeAssembly
+            pilot = SlopeAssembly(sim)
         if pilot:
             if screenshot:
                 while not pilot.done:
@@ -182,7 +190,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         def on_key(win, key, scancode, action, mods):
             nonlocal sim, scene, context
             if action == glfw.PRESS:
-                if (layout or ramp or portable_ramp or move_slope) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
+                if (layout or ramp or portable_ramp or move_slope or build_slopes) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
                     return
                 keys.add(key)
                 if key == glfw.KEY_ESCAPE:
@@ -311,6 +319,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                     left = 'PORTABLE RAMP / RULE CONTROL\n\nLift > Carry > Place > Cross\nOne simulation / no teleport or weld\nShared top: 0.44 m / Slope: 16.3 deg\nP: pause / resume | Esc: close'
                 if move_slope:
                     left = f'SINGLE {move_slope.upper()} SLOPE / RULE CONTROL\n\nLift > Carry > Place\nOffset pickup rail / no weld\nTop: 0.44 m / provisional mass: 1.5 kg\nP: pause / resume | Esc: close'
+                if build_slopes:
+                    left = 'BUILD TWO SLOPES / RULE CONTROL\n\nPlace UP > Place DOWN > Cross\nOne simulation / no teleport or weld\nTop: 0.44 m / nominal joint gap: 0.05 m\nP: pause / resume | Esc: close'
                 right = ''
                 ui['message'] = f"{pilot.stage} {'(PAUSED)' if ui['paused'] else ''} | {pilot.reason}"
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
@@ -347,7 +357,10 @@ if __name__ == '__main__':
     parser.add_argument('--ramp', action='store_true', help='Cross a static physical ramp; independent driving experiment.')
     parser.add_argument('--portable-ramp', action='store_true', help='Lift, transport, place and cross a free-body ramp.')
     parser.add_argument('--move-slope', choices=('up', 'down'), help='Carry one independent slope in an aligned lane.')
+    parser.add_argument('--build-slopes', action='store_true', help='Place both slope parts and cross the assembled course.')
     args = parser.parse_args()
+    if args.build_slopes and (args.move_slope or args.layout or args.plan or args.build or args.assemble or args.ramp or args.portable_ramp):
+        parser.error('--build-slopes uses a fixed two-piece course')
     if args.move_slope and (args.layout or args.plan or args.build or args.assemble or args.ramp or args.portable_ramp):
         parser.error('--move-slope is an independent transport experiment')
     if args.ramp and (args.layout or args.plan or args.build or args.assemble):
@@ -370,4 +383,4 @@ if __name__ == '__main__':
         from ai_plan import load_plan
         driving_plan = load_plan(args.plan)
         target_layout = driving_plan['layout']
-    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp, args.move_slope))
+    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp, args.move_slope, args.build_slopes))
