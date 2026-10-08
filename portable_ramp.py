@@ -6,11 +6,12 @@ import xml.etree.ElementTree as ET
 import numpy as np
 from transport import Transport
 from navigation import Navigator
+from parts import STANDARD_TOP_HEIGHT
 
 
-def add_portable_ramp(root, x=-1.5, y=0.0, height=0.3):
-    if height not in (0.2, 0.3, 0.4):
-        raise ValueError('Portable ramp height must be 0.2, 0.3 or 0.4 m.')
+def add_portable_ramp(root, x=-1.5, y=0.0, height=STANDARD_TOP_HEIGHT):
+    if height not in (0.2, 0.3, 0.4, STANDARD_TOP_HEIGHT):
+        raise ValueError('Portable ramp height must be 0.2, 0.3, 0.4 or the standard 0.44 m.')
     world, asset = root.find('worldbody'), root.find('asset')
     body = ET.SubElement(world, 'body', name='portable_ramp', pos=f'{x} {y} 0.08')
     ET.SubElement(body, 'freejoint', name='ramp_free')
@@ -26,7 +27,7 @@ def add_portable_ramp(root, x=-1.5, y=0.0, height=0.3):
                   friction='1.2 0.005 0.0001')
 
 
-def portable_xml(scene_path, height=0.3):
+def portable_xml(scene_path, height=STANDARD_TOP_HEIGHT):
     root = ET.parse(scene_path).getroot()
     world = root.find('worldbody')
     for body in list(world.findall('body')):

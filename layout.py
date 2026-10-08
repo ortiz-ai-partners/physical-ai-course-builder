@@ -3,6 +3,7 @@ import json
 import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from parts import STANDARD_TOP_HEIGHT
 
 ROOT = Path(__file__).resolve().parent
 GRID = 0.25
@@ -45,8 +46,8 @@ def validate_layout(value):
             raise ValueError('坂道が設計エリアからはみ出しています。')
         if any(abs(v / GRID - round(v / GRID)) > 1e-7 for v in (x, y)):
             raise ValueError('坂道は25cmのマス目に合わせてください。')
-        if h not in (0.2, 0.3, 0.4) or ramp.get('yaw', 0) != 0:
-            raise ValueError('運搬用の坂道は高さ20・30・40cm、向き固定です。')
+        if h not in (0.2, 0.3, 0.4, STANDARD_TOP_HEIGHT) or ramp.get('yaw', 0) != 0:
+            raise ValueError('坂道は共通天面44cm（旧版20・30・40cmも可）、向き固定です。')
         for block in result:
             if abs(x - block['x']) < 0.72 and abs(y - block['y']) < 2.04:
                 raise ValueError('坂道と箱が重なっています。離して置いてください。')
