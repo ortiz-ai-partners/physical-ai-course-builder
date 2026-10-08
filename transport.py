@@ -19,6 +19,7 @@ class Transport:
         self.max_rise = 0.0
         self.raised_travel = 0.0
         self.lift_position = None
+        self.drive_command = 0.0
 
     def change(self, stage):
         self.stage = stage
@@ -30,6 +31,13 @@ class Transport:
         self.reason = reason
 
     def action(self, sim):
+        forward, turn, lift = self.desired_action(sim)
+        # Ramp changes over several control steps to protect the unsupported load.
+        self.drive_command = 0.0 if self.done else float(np.clip(
+            forward, self.drive_command - 0.025, self.drive_command + 0.025))
+        return (self.drive_command, turn, lift)
+
+    def desired_action(self, sim):
         if self.done:
             return (0, 0, 0)
         sim.observe()
@@ -69,7 +77,7 @@ class Transport:
             if abs(error) < 0.015 and abs(sim.data.qvel[0]) < 0.025:
                 self.change('LOWER')
                 return (0, 0, 0)
-            return (float(np.clip(error * 1.2, -0.25, 0.25)), 0, 0)
+            return (float(np.clip(error * 1.8, -0.60, 0.60)), 0, 0)
         if self.stage == 'LOWER':
             if sim.lift_target > 0:
                 return (0, 0, -1)
@@ -80,7 +88,7 @@ class Transport:
             if box[0] - base[0] > 1.72:
                 self.change('CHECK')
             else:
-                return (-0.25, 0, 0)
+                return (-0.45 if box[0] - base[0] > 1.45 else -0.30, 0, 0)
         if self.stage == 'CHECK' and self.stage_steps > 60:
             joint = sim.model.body('block_1').jntadr[0]
             dof = sim.model.jnt_dofadr[joint]

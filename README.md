@@ -143,3 +143,5 @@ MuJoCo、GLFW、NumPy、Pillowなどの依存パッケージ本体は同梱せ�
 
 - [MuJoCo公式](https://mujoco.readthedocs.io/en/stable/python.html)
 - [GLFW公式](https://www.glfw.org/)
+
+自動運搬の速度調整：差し込みは低速を維持し、運搬中の上限を上げ、加減速を段階的に変更します。約3mの例はシミュレーション内で26.18秒から17.72秒へ短縮。4目標位置で成功を再確認しています。実時間はPC性能によって異なります。
