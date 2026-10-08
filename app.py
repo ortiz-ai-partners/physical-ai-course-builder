@@ -116,7 +116,7 @@ class Recorder:
             self.file = None
 
 
-def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False, slope_plan=None, maneuver_mode=None):
+def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False, slope_plan=None, maneuver_mode=None, pose_case=None):
     if not glfw.init():
         raise RuntimeError('OpenGL window could not initialize.')
     window = None
@@ -139,6 +139,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             title = slope_plan['name']+' | saved AI plan / rule execution'
         if maneuver_mode:
             title = 'Empty vehicle | '+maneuver_mode+' | rule control'
+        if pose_case:
+            title = 'Pose practice | '+pose_case+' | human demonstration'
         window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
@@ -148,6 +150,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         if maneuver_mode:
             from maneuver import maneuver_xml
             custom_xml = maneuver_xml(ROOT/'scene_fork_tracks.xml')
+        if pose_case:
+            from pose_task import pose_xml
+            custom_xml = pose_xml(ROOT/'scene_fork_tracks.xml', pose_case)
         if move_slope:
             from slope_transport import slope_transport_xml
             custom_xml = slope_transport_xml(ROOT/'scene_fork_tracks.xml', move_slope)
@@ -155,6 +160,11 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             from slope_assembly import assembly_xml
             custom_xml = assembly_xml(ROOT/'scene_fork_tracks.xml')
         sim = Simulation(layout=layout, construction=construction, ramp_height=0.35 if ramp else None, portable_ramp=portable_ramp, scene_xml=custom_xml)
+        pose_task = None
+        if pose_case:
+            from pose_task import PoseTask, PoseRecorder
+            pose_task = PoseTask(sim, pose_case)
+            recorder = PoseRecorder(pose_task, custom_xml, ROOT/'recordings'/'pose')
         pilot = None
         if maneuver_mode:
             from navigation import Navigator
@@ -200,6 +210,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         def on_key(win, key, scancode, action, mods):
             nonlocal sim, scene, context
             if action == glfw.PRESS:
+                if pose_case and key in (glfw.KEY_T, glfw.KEY_SPACE, glfw.KEY_LEFT_SHIFT, glfw.KEY_RIGHT_SHIFT):
+                    return
                 if (layout or ramp or portable_ramp or move_slope or build_slopes or maneuver_mode) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
                     return
                 keys.add(key)
@@ -208,6 +220,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                 elif key == glfw.KEY_R:
                     recorder.stop('reset')
                     sim.reset()
+                    if pose_task:
+                        pose_task.reset(sim)
+                        recorder.saved_success = False
                     keys.clear()
                     ui['message'] = 'Scene reset. Recording closed.'
                 elif key == glfw.KEY_P:
@@ -228,8 +243,11 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                         recorder.stop()
                         ui['message'] = f'Saved {recorder.frames} steps to recordings/.'
                     else:
-                        recorder.start(sim)
-                        ui['message'] = 'Recording state / action / next state at 50 Hz.'
+                        if pose_task and pose_task.done:
+                            ui['message'] = 'Press R for a new attempt before recording.'
+                        else:
+                            recorder.start(sim)
+                            ui['message'] = 'Recording state / action / next state at 50 Hz.'
                 elif key == glfw.KEY_1:
                     camera.azimuth, camera.elevation, camera.distance = 140, -48, 11
                     camera.lookat[:] = [-0.3, 0, 0.1]
@@ -290,13 +308,24 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                     action[1] *= 0.3
                 if pilot:
                     action = pilot.action(sim)
+                if pose_task:
+                    action[2] = 0
+                    if action[1]:
+                        # This skid-steer proxy needs enough torque to turn.
+                        action[1] = math.copysign(max(.65, abs(action[1])), action[1])
+                    if pose_task.done:
+                        action = [0, 0, 0]
                 before = sim.observe() if recorder.file else None
                 controls = sim.step(*action)
+                if pose_task:
+                    pose_task.update(sim)
                 if recorder.file:
                     recorder.write({'type': 'transition', 'step': recorder.frames,
                                     'state': before, 'action': action,
                                     'actuator_command': controls.tolist(), 'next_state': sim.observe()})
                     recorder.frames += 1
+                    if pose_task and pose_task.done:
+                        recorder.stop('task_success' if pose_task.success else 'task_failed')
             if ui['follow']:
                 camera.lookat[:] = sim.data.body('dozer').xpos
                 camera.distance = min(camera.distance, 6)
@@ -313,6 +342,12 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             status = 'PAUSED' if ui['paused'] else ('RECORDING' if recorder.file else 'MANUAL / NO AI')
             left = 'TRACKED DOZER\n\nDrive\nLift\nAttachment\nRecord\nReset / Pause\nCamera\nView\nExit'
             right = f'{status}\n\nW A S D / hold Q: slow\nSpace UP / Shift DOWN\nT: {sim.attachment.upper()} (resets scene)\nF ({recorder.frames} steps)\nR / P\nDrag / wheel / C follow\n1 overview / 2 top\nEsc'
+            if pose_task:
+                m = pose_task.metrics
+                left = 'POSE PRACTICE / HUMAN DEMO\n\nCase: '+pose_case+'\nWASD / hold Q: slow\nF: record / finish | R: retry\nP: pause | 2: top view | Esc: close\nMatch green position AND arrow direction\nStop: 1 second / Auto-save on completion'
+                right = ''
+                result = ('SUCCESS - SAVED' if recorder.saved_success else 'SUCCESS - NOT RECORDED; R to retry') if pose_task.success else 'STOPPED; R to retry' if pose_task.done else 'RECORDING' if recorder.file else 'PRACTICE - NOT RECORDING'
+                ui['message'] = f'{result} | Position: {m["position_error_m"]:.3f}/0.080 m | Heading: {m["heading_error_deg"]:.1f}/8 deg | Hold: {pose_task.hold_seconds:.1f}/1 s'
             if layout and not pilot:
                 left = 'TARGET LAYOUT PREVIEW\n\nDesired final positions only\nNo autonomous construction / No AI\n\nCamera: drag / wheel\nView: 1 overview / 2 top\nClose: Esc'
                 right = ''
@@ -374,7 +409,10 @@ if __name__ == '__main__':
     parser.add_argument('--build-slopes', action='store_true', help='Place both slope parts and cross the assembled course.')
     parser.add_argument('--slope-plan', type=Path, help='Validate and replay a saved AI plan for slope construction.')
     parser.add_argument('--maneuver', choices=('forward-only', 'reverse-enabled'), help='Empty-vehicle direction-choice comparison.')
+    parser.add_argument('--pose-practice', choices=('back', 'front', 'rear-left', 'rear-right-eval', 'rotated-eval'), help='Record human pose-goal demonstrations in a separate folder.')
     args = parser.parse_args()
+    if args.pose_practice and any((args.move_slope, args.layout, args.plan, args.build, args.assemble, args.ramp, args.portable_ramp, args.build_slopes, args.slope_plan, args.maneuver)):
+        parser.error('--pose-practice is an independent human demonstration task')
     if args.maneuver and any((args.move_slope, args.layout, args.plan, args.build, args.assemble, args.ramp, args.portable_ramp, args.build_slopes, args.slope_plan)):
         parser.error('--maneuver is an independent empty-vehicle experiment')
     slope_plan = None
@@ -411,4 +449,4 @@ if __name__ == '__main__':
         from ai_plan import load_plan
         driving_plan = load_plan(args.plan)
         target_layout = driving_plan['layout']
-    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp, args.move_slope, args.build_slopes, slope_plan, args.maneuver))
+    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp, args.move_slope, args.build_slopes, slope_plan, args.maneuver, args.pose_practice))

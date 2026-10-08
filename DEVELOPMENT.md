@@ -1,4 +1,18 @@
-# 最新：空荷の前後進選択と比較基準
+# 最新：朝の部・目標姿勢とお手本収集環境
+
+ユーザーが朝7時以降も自走継続を明示。夜間の停止予定より後の新しい依頼として、位置＋向きの練習環境を実装。朝の終了時刻は質問中で未回答。古いautomation physical-aiは停止操作がツールで拒否されACTIVEのまま。旧promptは7時で終了という指示なので、朝の継続用として設定済みとは扱わない。
+
+pose_task.pyで5ケース（train: back/front/rear-left、evaluation: rear-right-eval/rotated-eval）。8cm・8度・並進速度.03m/s未満・角速度.04rad/s未満を1秒維持で成功。120秒制限、接触・転倒失敗。位置は車体中心、向きは車体前方。学習モデルや自動姿勢合わせ制御はまだない。
+
+app.py --pose-practice とpose-practice.cmd。手動WASD、Q低速、F録画、Rリセット。目標表示、誤差表示、記録中/未記録を明示。成功時の自動保存。フォーク昇降・装備交換は無効。Fで記録開始時には停止維持時間を0へ戻し、記録内に1秒の根拠を確保する。
+
+PoseRecorderがrecordings/poseへ新規ファイル、50Hz状態・操作・次状態＋目標相対位置/向き/速度＋実際のXMLとハッシュ＋成功条件を保存。元の記録は変更しない。pose_dataset.pyで完了行、連続性、目標と特徴量、成功の停止時間を点検。人の成功したtrainのみを学習候補にし、scripted_test/evaluation/不完全記録を除外。変換や学習は未実施。
+
+verify_pose_task.py：スクリプトの物理後退で誤差.0241m・0度、325フレームで成功。位置が合っても90度違う姿勢は不合格、49ステップ停止は未成功、50ステップで成功。不完全記録・偽成功を拒否、5シーン読込。従来verify.pyもPASS。人の実演は今回0本。UIは非表示ウィンドウのスクリプト入力と描画で検査する。
+
+次は人の操作感確認と少数の収集データ点検、その後に学習コード・実演単位の分割。Jevは検討保留、課金やAPI接続なし。直前公開ee84df22a72030e70b6a89f7382616c8e6259ac1/tree 4805de53d210d2afbaa25c4934a2e3b62ee88491。
+
+# 以前の進捗：空荷の前後進選択と比較基準
 
 2026-10-09。Jevはユーザーと相談し要検討・未導入。次工程としてnavigation.Navigatorにallow_reverse=False既定の任意機能。目標方向誤差がpi/2+.2rad以上なら後退を選択し、到着まで方向固定。既存施工には有効化しない。maneuver.pyで空荷の独立シーン、app.py --maneuver forward-only/reverse-enabled、outputsとrepoにreverse-demo.cmd/forward-only-demo.cmd。
 
