@@ -3,11 +3,13 @@
 Only actuator commands are issued. Initial lane alignment is scene setup,
 not navigation. Success requires placement, rest, and fork clearance.
 """
+import math
 import numpy as np
 
 
 class Transport:
-    def __init__(self, sim, target):
+    def __init__(self, sim, target, box_name="block_1"):
+        self.box_name = box_name
         self.target = np.array([target['x'], target['y']], dtype=float)
         self.stage = 'INSERT'
         self.elapsed = 0
@@ -15,7 +17,7 @@ class Transport:
         self.done = False
         self.success = False
         self.reason = ''
-        self.floor_z = float(sim.data.body('block_1').xpos[2])
+        self.floor_z = float(sim.data.body(self.box_name).xpos[2])
         self.max_rise = 0.0
         self.raised_travel = 0.0
         self.lift_position = None
@@ -35,6 +37,11 @@ class Transport:
         # Ramp changes over several control steps to protect the unsupported load.
         self.drive_command = 0.0 if self.done else float(np.clip(
             forward, self.drive_command - 0.025, self.drive_command + 0.025))
+        if self.stage in ('INSERT', 'CARRY') and abs(self.drive_command) > 0.01:
+            w,x,y,z = sim.data.body('dozer').xquat
+            yaw = math.atan2(2*(w*z+x*y),1-2*(y*y+z*z))
+            lateral = self.target[1] - sim.data.body('dozer').xpos[1]
+            turn = float(np.clip(3.0 * (math.atan2(lateral, 0.7) - yaw), -0.8, 0.8))
         return (self.drive_command, turn, lift)
 
     def desired_action(self, sim):
@@ -43,7 +50,7 @@ class Transport:
         sim.observe()
         self.elapsed += 1
         self.stage_steps += 1
-        box = sim.data.body('block_1').xpos.copy()
+        box = sim.data.body(self.box_name).xpos.copy()
         base = sim.data.body('dozer').xpos.copy()
         rise = float(box[2] - self.floor_z)
         self.max_rise = max(self.max_rise, rise)
@@ -90,7 +97,7 @@ class Transport:
             else:
                 return (-0.45 if box[0] - base[0] > 1.45 else -0.30, 0, 0)
         if self.stage == 'CHECK' and self.stage_steps > 60:
-            joint = sim.model.body('block_1').jntadr[0]
+            joint = sim.model.body(self.box_name).jntadr[0]
             dof = sim.model.jnt_dofadr[joint]
             speed = float(np.linalg.norm(sim.data.qvel[dof:dof+3]))
             error = float(np.linalg.norm(box[:2] - self.target))

@@ -45,7 +45,7 @@ def preview_xml(layout, scene_path, construction=False):
     root = ET.parse(scene_path).getroot()
     world = root.find('worldbody')
     for body in list(world.findall('body')):
-        if body.get('name') in (('block_2', 'block_3', 'block_4', 'ball') if construction else ('block_3', 'block_4', 'ball')):
+        if body.get('name') in (('block_2', 'block_3', 'block_4', 'ball') if construction is True else ('block_3', 'block_4', 'ball')):
             world.remove(body)
     for block in layout['blocks']:
         body = world.find(f"body[@name='{block['id']}']")
