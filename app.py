@@ -22,10 +22,13 @@ CONTROL_DT = 0.02
 
 
 class Simulation:
-    def __init__(self, attachment='fork', layout=None, construction=False):
+    def __init__(self, attachment='fork', layout=None, construction=False, ramp_height=None):
         self.attachment = attachment
         self.scene_path = ROOT / ('scene_fork_tracks.xml' if attachment == 'fork' else 'scene_tracks.xml')
-        if layout is None:
+        if ramp_height is not None:
+            from terrain import ramp_xml
+            self.model = mujoco.MjModel.from_xml_string(ramp_xml(self.scene_path, ramp_height))
+        elif layout is None:
             self.model = mujoco.MjModel.from_xml_path(str(self.scene_path))
         else:
             from layout import preview_xml
@@ -108,7 +111,7 @@ class Recorder:
             self.file = None
 
 
-def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None):
+def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False):
     if not glfw.init():
         raise RuntimeError('OpenGL window could not initialize.')
     window = None
@@ -119,12 +122,14 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
         glfw.window_hint(glfw.SAMPLES, 4)
         title = 'AI plan replay | rule-based driving' if driving_plan else 'Auto Transport | Faster cruise / RED BOX ONLY' if construction else 'Layout Preview | NOT a construction result' if layout else 'Bulldozer Lab | WASD + Space / Shift'
+        if ramp:
+            title = 'Ramp Crossing | Physical contact / rule control'
         window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
         glfw.make_context_current(window)
         glfw.swap_interval(1)
-        sim = Simulation(layout=layout, construction=construction)
+        sim = Simulation(layout=layout, construction=construction, ramp_height=0.35 if ramp else None)
         pilot = None
         if construction == 'gate':
             from assembly import Assembly
@@ -135,6 +140,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         if driving_plan and construction != 'gate':
             from navigation import Navigator
             pilot = Navigator(sim, driving_plan['waypoints'])
+        if ramp:
+            from terrain import RampPilot
+            pilot = RampPilot(sim)
         if pilot:
             if screenshot:
                 while not pilot.done:
@@ -155,7 +163,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         def on_key(win, key, scancode, action, mods):
             nonlocal sim, scene, context
             if action == glfw.PRESS:
-                if layout and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
+                if (layout or ramp) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
                     return
                 keys.add(key)
                 if key == glfw.KEY_ESCAPE:
@@ -278,6 +286,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                     left = 'AI PLAN REPLAY / RULE EXECUTION\n\nExisting course / not constructed here\nNo fresh inference during replay\nP: pause / resume | Esc: close'
                 if construction == 'gate':
                     left = 'ASSEMBLE + DRIVE / RULE EXECUTION\n\nTwo boxes / one continuous simulation\nNo teleport during execution\nP: pause / resume | Esc: close'
+                if ramp:
+                    left = 'RAMP CROSSING / RULE CONTROL\n\nStatic ramp / not built by the vehicle\nPhysical wheel contact / height 0.35 m\nP: pause / resume | Esc: close'
                 right = ''
                 ui['message'] = f"{pilot.stage} {'(PAUSED)' if ui['paused'] else ''} | {pilot.reason}"
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
@@ -311,7 +321,10 @@ if __name__ == '__main__':
     parser.add_argument('--build', action='store_true', help='Carry red box in an initially aligned straight lane.')
     parser.add_argument('--plan', type=Path, help='Replay a saved chat-authored plan on an existing course.')
     parser.add_argument('--assemble', action='store_true', help='Build both boxes then drive, without resetting the scene.')
+    parser.add_argument('--ramp', action='store_true', help='Cross a static physical ramp; independent driving experiment.')
     args = parser.parse_args()
+    if args.ramp and (args.layout or args.plan or args.build or args.assemble):
+        parser.error('--ramp is an independent driving experiment')
     if args.assemble and not args.plan:
         parser.error('--assemble requires --plan')
     if args.plan and (args.layout or args.build):
@@ -328,4 +341,4 @@ if __name__ == '__main__':
         from ai_plan import load_plan
         driving_plan = load_plan(args.plan)
         target_layout = driving_plan['layout']
-    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan))
+    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp))
