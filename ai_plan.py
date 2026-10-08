@@ -20,6 +20,8 @@ def validate_plan(value):
     if not isinstance(rationale, str) or not 1 <= len(rationale) <= 3000:
         raise ValueError('Plan must explain its design choices.')
     layout = validate_layout(value.get('layout'))
+    if layout.get('ramps'):
+        raise ValueError('Ramp layouts support preview only; use --ramp for the independent crossing demo.')
     points = value.get('waypoints')
     if not isinstance(points, list) or not 2 <= len(points) <= 20:
         raise ValueError('Plan must contain 2 to 20 waypoints.')

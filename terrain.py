@@ -7,28 +7,34 @@ import xml.etree.ElementTree as ET
 from navigation import Navigator
 
 
-def ramp_xml(scene_path, height=0.35):
+def add_ramp(root, height=0.35, x=0.5, y=0.0):
+    """Append a fixed 5 x 1.8 m ramp, centered at (x, y)."""
     if type(height) not in (int, float) or not math.isfinite(height) or not 0.15 <= height <= 0.5:
         raise ValueError('Ramp height must be between 0.15 and 0.5 m.')
-    root = ET.parse(scene_path).getroot()
     world, asset = root.find('worldbody'), root.find('asset')
+    # Closed convex triangular prisms: the mesh itself is the collision surface.
+    for name, ends, color in [
+        ('ramp_up', [(-2, 0), (0, 0), (0, height)], '0.23 0.65 0.74 1'),
+        ('ramp_down', [(1, 0), (3, 0), (1, height)], '0.23 0.65 0.74 1')]:
+        vertices = ' '.join(f'{vx + x - 0.5} {vy + y} {z}' for vy in (-0.9, 0.9) for vx, z in ends)
+        ET.SubElement(asset, 'mesh', name=name, vertex=vertices)
+        ET.SubElement(world, 'geom', name=name, type='mesh', mesh=name, rgba=color,
+                      friction='1.0 0.005 0.0001')
+    ET.SubElement(world, 'geom', name='ramp_top', type='box',
+                  pos=f'{x} {y} {height / 2}', size=f'0.5 0.9 {height / 2}',
+                  rgba='0.97 0.73 0.24 1', friction='1.0 0.005 0.0001')
+
+
+def ramp_xml(scene_path, height=0.35):
+    root = ET.parse(scene_path).getroot()
+    world = root.find('worldbody')
     for body in list(world.findall('body')):
         if body.get('name') in ('block_3', 'block_4', 'ball'):
             world.remove(body)
     for name, y in [('block_1', 3), ('block_2', -3)]:
         world.find(f"body[@name='{name}']").set('pos', f'0 {y} 0.26')
     world.find("body[@name='dozer']").set('pos', '-3.8 0 0.30')
-    # Closed convex triangular prisms: the mesh itself is the collision surface.
-    for name, ends, color in [
-        ('ramp_up', [(-2, 0), (0, 0), (0, height)], '0.23 0.65 0.74 1'),
-        ('ramp_down', [(1, 0), (3, 0), (1, height)], '0.23 0.65 0.74 1')]:
-        vertices = ' '.join(f'{x} {y} {z}' for y in (-0.9, 0.9) for x, z in ends)
-        ET.SubElement(asset, 'mesh', name=name, vertex=vertices)
-        ET.SubElement(world, 'geom', name=name, type='mesh', mesh=name, rgba=color,
-                      friction='1.0 0.005 0.0001')
-    ET.SubElement(world, 'geom', name='ramp_top', type='box',
-                  pos=f'0.5 0 {height / 2}', size=f'0.5 0.9 {height / 2}',
-                  rgba='0.97 0.73 0.24 1', friction='1.0 0.005 0.0001')
+    add_ramp(root, height)
     return ET.tostring(root, encoding='unicode')
 
 

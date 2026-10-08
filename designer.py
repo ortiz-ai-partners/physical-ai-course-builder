@@ -51,6 +51,8 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < size < 16384:
                 raise ValueError('配置データのサイズが違います。')
             layout = validate_layout(json.loads(self.rfile.read(size)))
+            if self.path == '/api/build' and layout.get('ramps'):
+                raise ValueError('坂道付き配置の施工はまだ未対応です。3Dプレビューで確認してください。')
             with self.server.save_lock:
                 folder = ROOT / 'designs'
                 folder.mkdir(exist_ok=True)

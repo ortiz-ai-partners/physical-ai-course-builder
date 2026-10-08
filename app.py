@@ -17,15 +17,18 @@ import numpy as np
 from tracks import TrackAnimation
 
 ROOT = Path(__file__).resolve().parent
-OBJECTS = ['dozer', 'blade', 'block_1', 'block_2', 'block_3', 'block_4', 'ball']
+OBJECTS = ['dozer', 'blade', 'block_1', 'block_2', 'block_3', 'block_4', 'ball', 'portable_ramp']
 CONTROL_DT = 0.02
 
 
 class Simulation:
-    def __init__(self, attachment='fork', layout=None, construction=False, ramp_height=None):
+    def __init__(self, attachment='fork', layout=None, construction=False, ramp_height=None, portable_ramp=False):
         self.attachment = attachment
         self.scene_path = ROOT / ('scene_fork_tracks.xml' if attachment == 'fork' else 'scene_tracks.xml')
-        if ramp_height is not None:
+        if portable_ramp:
+            from portable_ramp import portable_xml
+            self.model = mujoco.MjModel.from_xml_string(portable_xml(self.scene_path))
+        elif ramp_height is not None:
             from terrain import ramp_xml
             self.model = mujoco.MjModel.from_xml_string(ramp_xml(self.scene_path, ramp_height))
         elif layout is None:
@@ -111,7 +114,7 @@ class Recorder:
             self.file = None
 
 
-def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False):
+def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False):
     if not glfw.init():
         raise RuntimeError('OpenGL window could not initialize.')
     window = None
@@ -124,12 +127,14 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         title = 'AI plan replay | rule-based driving' if driving_plan else 'Auto Transport | Faster cruise / RED BOX ONLY' if construction else 'Layout Preview | NOT a construction result' if layout else 'Bulldozer Lab | WASD + Space / Shift'
         if ramp:
             title = 'Ramp Crossing | Physical contact / rule control'
+        if portable_ramp:
+            title = 'Portable Ramp | Lift, place and cross / rule control'
         window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
         glfw.make_context_current(window)
         glfw.swap_interval(1)
-        sim = Simulation(layout=layout, construction=construction, ramp_height=0.35 if ramp else None)
+        sim = Simulation(layout=layout, construction=construction, ramp_height=0.35 if ramp else None, portable_ramp=portable_ramp)
         pilot = None
         if construction == 'gate':
             from assembly import Assembly
@@ -143,6 +148,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         if ramp:
             from terrain import RampPilot
             pilot = RampPilot(sim)
+        if portable_ramp:
+            from portable_ramp import PortablePilot
+            pilot = PortablePilot(sim)
         if pilot:
             if screenshot:
                 while not pilot.done:
@@ -163,7 +171,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         def on_key(win, key, scancode, action, mods):
             nonlocal sim, scene, context
             if action == glfw.PRESS:
-                if (layout or ramp) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
+                if (layout or ramp or portable_ramp) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
                     return
                 keys.add(key)
                 if key == glfw.KEY_ESCAPE:
@@ -288,6 +296,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                     left = 'ASSEMBLE + DRIVE / RULE EXECUTION\n\nTwo boxes / one continuous simulation\nNo teleport during execution\nP: pause / resume | Esc: close'
                 if ramp:
                     left = 'RAMP CROSSING / RULE CONTROL\n\nStatic ramp / not built by the vehicle\nPhysical wheel contact / height 0.35 m\nP: pause / resume | Esc: close'
+                if portable_ramp:
+                    left = 'PORTABLE RAMP / RULE CONTROL\n\nLift > Carry > Place > Cross\nOne simulation / no teleport or weld\nPrototype: 3.6 x 1 x 0.3 m / 3 kg\nP: pause / resume | Esc: close'
                 right = ''
                 ui['message'] = f"{pilot.stage} {'(PAUSED)' if ui['paused'] else ''} | {pilot.reason}"
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
@@ -322,9 +332,12 @@ if __name__ == '__main__':
     parser.add_argument('--plan', type=Path, help='Replay a saved chat-authored plan on an existing course.')
     parser.add_argument('--assemble', action='store_true', help='Build both boxes then drive, without resetting the scene.')
     parser.add_argument('--ramp', action='store_true', help='Cross a static physical ramp; independent driving experiment.')
+    parser.add_argument('--portable-ramp', action='store_true', help='Lift, transport, place and cross a free-body ramp.')
     args = parser.parse_args()
     if args.ramp and (args.layout or args.plan or args.build or args.assemble):
         parser.error('--ramp is an independent driving experiment')
+    if args.portable_ramp and (args.ramp or args.layout or args.plan or args.build or args.assemble):
+        parser.error('--portable-ramp is an independent construction experiment')
     if args.assemble and not args.plan:
         parser.error('--assemble requires --plan')
     if args.plan and (args.layout or args.build):
@@ -341,4 +354,4 @@ if __name__ == '__main__':
         from ai_plan import load_plan
         driving_plan = load_plan(args.plan)
         target_layout = driving_plan['layout']
-    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp))
+    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp))
