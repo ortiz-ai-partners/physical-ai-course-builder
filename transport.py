@@ -8,11 +8,12 @@ import numpy as np
 
 
 class Transport:
-    def __init__(self, sim, target, box_name="block_1", pickup_distance=1.0, release_distance=1.72):
+    def __init__(self, sim, target, box_name="block_1", pickup_distance=1.0, release_distance=1.72, lane_y=None):
         self.box_name = box_name
         self.pickup_distance = pickup_distance
         self.release_distance = release_distance
         self.target = np.array([target['x'], target['y']], dtype=float)
+        self.lane_y = self.target[1] if lane_y is None else float(lane_y)
         self.stage = 'INSERT'
         self.elapsed = 0
         self.stage_steps = 0
@@ -42,7 +43,7 @@ class Transport:
         if self.stage in ('INSERT', 'CARRY') and abs(self.drive_command) > 0.01:
             w,x,y,z = sim.data.body('dozer').xquat
             yaw = math.atan2(2*(w*z+x*y),1-2*(y*y+z*z))
-            lateral = self.target[1] - sim.data.body('dozer').xpos[1]
+            lateral = self.lane_y - sim.data.body('dozer').xpos[1]
             turn = float(np.clip(3.0 * (math.atan2(lateral, 0.7) - yaw), -0.8, 0.8))
         return (self.drive_command, turn, lift)
 
