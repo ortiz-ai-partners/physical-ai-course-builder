@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "plan_sha256": "048ddb10fa6da2fe22b8b1a1a66639496bfd82998f99395c065f09872bdca7fe",
+  "fresh_ai_inference": false,
+  "controller": "feedback_rules",
+  "construction_performed": true,
+  "success": true,
+  "phase": "assemble_and_cross",
+  "plan_name": "こもれびの小さな峠",
+  "reason": "Placed 2 slopes; crossed 4/4 surfaces; rise 0.440 m",
+  "simulation_seconds": 166.36,
+  "placement_errors_m": {
+    "up_1": 0.01877308251893989,
+    "down_1": 0.014625499524736367
+  },
+  "transported_parts": [
+    {
+      "part": "up_1",
+      "lift_m": 0.2075615051644948,
+      "carry_m": 2.4838457970791383
+    },
+    {
+      "part": "down_1",
+      "lift_m": 0.20756141450204565,
+      "carry_m": 2.485167872312647
+    }
+  ],
+  "contacted_surface_count": 4,
+  "vehicle_rise_m": 0.44013987218028944,
+  "note": "AI authored a saved plan in chat; replay performs no new inference. Construction performed means attempted; inspect success.",
+  "validation_cases": {
+    "cases": [
+      {
+        "target_x": 1.0,
+        "seconds": 166.36,
+        "errors_m": {
+          "up_1": 0.01877308251893989,
+          "down_1": 0.014625499524736367
+        }
+      },
+      {
+        "target_x": 1.5,
+        "seconds": 203.0,
+        "errors_m": {
+          "up_1": 0.0163385969271176,
+          "down_1": 0.013056006229492278
+        }
+      },
+      {
+        "target_x": 2.0,
+        "seconds": 200.22,
+        "errors_m": {
+          "up_1": 0.017473595318557543,
+          "down_1": 0.013099017768792647
+        }
+      }
+    ],
+    "rejected_before_physics": [
+      "unknown executable field",
+      "reversed build order",
+      "reversed crossing",
+      "misaligned connection",
+      "overlap",
+      "unsupported rotation",
+      "unsupported location",
+      "boolean coordinate",
+      "nonfinite coordinate",
+      "duplicate part",
+      "missing part"
+    ]
+  }
+}

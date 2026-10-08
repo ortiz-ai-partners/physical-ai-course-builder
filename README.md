@@ -8,6 +8,25 @@
 
 ## できること
 
+### チャットのAIが計画した「こもれびの小さな峠」
+
+`ai-slope-course.cmd` で、保存したAI計画を読み、坂2個を運んで設置し、そのコースを走ります。日本語の名前はウィンドウタイトルに表示。AIが制約を読んで選んだ配置X=1mを、実際の運搬目標と走行経路へ渡します。
+
+計画→検査→物理施工・走行→結果JSON→チャットAIによる評価、を一巡させました。名前・理由・配置は `examples/ortiz-slope-plan.json`、結果は `examples/ortiz-slope-result.json`、AIが結果を読んだ判断は `examples/ortiz-slope-review.json` に保存しています。初案は166.36秒で成功し、比較3位置の中で最短だったため採用を維持しました。最適解や一般的な成功率を示すものではありません。
+
+```powershell
+.\.venv\Scripts\python.exe slope_plan.py --capabilities
+.\.venv\Scripts\python.exe slope_plan.py examples/ortiz-slope-plan.json --report .test-results/slope-result.json
+.\.venv\Scripts\python.exe app.py --slope-plan examples/ortiz-slope-plan.json
+.\.venv\Scripts\python.exe verify_slope_plan.py
+```
+
+対応はX=1/1.5/2mの3位置、上りY=-1m・下りY=1.05m、向き0度、上り→下りの施工、Y正方向への走行です。現在はAIもこの限定テンプレートから選びます。下位コードが接近・差し込み・後退などの具体的操作を決めます。任意の形や順番を実行する仕組みではありません。
+
+3位置で物理施工・走行成功（166.36/203.00/200.22秒）。不正な位置、重なり、逆順、回転、重複、非数など11種類は物理実行前に拒否し、理由を結果JSONへ返します。これは対応テンプレートの検査で、汎用の衝突回避計画ではありません。
+
+**AIによる計画と評価はこのチャットで行います。アプリからAIへの自動問い合わせはなく、再生中は新しい推論や学習を行いません。** 計画を変更したら再実行し、結果JSONをこのチャットへ渡して評価・修正します。モデルの学習は今後の工程です。
+
 ### 上り坂・下り坂を運んで組み、渡る
 
 `build-slopes.cmd`（または `python app.py --build-slopes`）で、上り坂を設置→空荷で旋回・後退→下り坂を設置→完成した坂を渡るデモを起動します。Pで一時停止、Escで終了。

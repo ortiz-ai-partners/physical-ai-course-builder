@@ -1,4 +1,14 @@
-# 最新：独立した上り坂・下り坂の連続施工と走行
+# 最新：チャットAI計画から坂の施工・走行・結果レビューまで接続
+
+2026-10-09。slope_plan.pyで限定したslope-course-v1形式の検証・実行・結果JSON出力。チャットでAIが「こもれびの小さな峠」と命名しX=1mの初案を生成、実行結果を読んで採用維持のreview.jsonを保存した。examples/ortiz-slope-plan.json / ortiz-slope-result.json / ortiz-slope-review.json。自動API呼出しや再生中の新しい推論・学習はない。名前・理由・許容位置の選択が上位AI、具体的な操作系列はルール。
+
+SlopeAssemblyのtarget_xを計画から渡す。app.py --slope-plan、ai-slope-course.cmd（repoとoutputsの双方）。頭なし実行はslope_plan.py PLAN --report PATH。不正計画は物理起動前にphase=validation_rejectedと理由を返す。入力計画と出力の同一パスは拒否。
+
+検証：X=1/1.5/2の各位置で施工と走行成功、166.36/203.00/200.22秒。初案の誤差.01877/.01463m、4面接触・上昇.44014m。11種類の不正案をSimulationの起動なしで拒否。verify_slope_plan.py。計画ファイルのSHA256を結果に保存。AIレビューは3条件で最短の初案を維持、距離だけで時間が決まるとは解釈しない。スクリーンショット描画確認。
+
+制限：Xは3選択肢のみ。Y=-1/1.05、yaw=0、上り→下り、正Y走行は固定。資材の初期位置も従来と同じ。設計室との接続・任意配置・実行中再計画は未実装。次は位置合わせの頑健性と学習収集環境。7時以降の夜間heartbeatは成果を報告して停止する。直前公開b396e2d6e8d000c99ab5d91b1de916337d8724c2/tree dfe30fc84e11e3279bac4afc203cc1a57c596e24、現在の公開先はGitHub mainで確認。
+
+# 以前の進捗：独立した上り坂・下り坂の連続施工と走行
 
 2026-10-09 06:25 JST。slope_assembly.py / app.py --build-slopes / build-slopes.cmd を追加。同じ物理シーンで上り設置→空荷移動・後退→下り設置→走行が203秒で成功。verify_slope_assembly.pyで座標直接変更なし・時間巻戻しなし・固定拘束なしを検査。両方を約.208m持ち上げ約2.98m運搬、最終配置誤差.01634/.01306m、4面接触、車体上昇.44015m。外力で設置済み部品を動かす負例も失敗停止。完成画面を描画確認。旧箱4条件・単体坂6条件と負例も再検証成功。
 
