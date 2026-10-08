@@ -116,7 +116,7 @@ class Recorder:
             self.file = None
 
 
-def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False, slope_plan=None):
+def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False, slope_plan=None, maneuver_mode=None):
     if not glfw.init():
         raise RuntimeError('OpenGL window could not initialize.')
     window = None
@@ -137,12 +137,17 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             title = 'Build two slopes and cross | rule control'
         if slope_plan:
             title = slope_plan['name']+' | saved AI plan / rule execution'
+        if maneuver_mode:
+            title = 'Empty vehicle | '+maneuver_mode+' | rule control'
         window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
         glfw.make_context_current(window)
         glfw.swap_interval(1)
         custom_xml = None
+        if maneuver_mode:
+            from maneuver import maneuver_xml
+            custom_xml = maneuver_xml(ROOT/'scene_fork_tracks.xml')
         if move_slope:
             from slope_transport import slope_transport_xml
             custom_xml = slope_transport_xml(ROOT/'scene_fork_tracks.xml', move_slope)
@@ -151,6 +156,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             custom_xml = assembly_xml(ROOT/'scene_fork_tracks.xml')
         sim = Simulation(layout=layout, construction=construction, ramp_height=0.35 if ramp else None, portable_ramp=portable_ramp, scene_xml=custom_xml)
         pilot = None
+        if maneuver_mode:
+            from navigation import Navigator
+            pilot = Navigator(sim, [[-1, 0]], allow_reverse=maneuver_mode == 'reverse-enabled')
         if construction == 'gate':
             from assembly import Assembly
             pilot = Assembly(sim, driving_plan)
@@ -192,7 +200,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         def on_key(win, key, scancode, action, mods):
             nonlocal sim, scene, context
             if action == glfw.PRESS:
-                if (layout or ramp or portable_ramp or move_slope or build_slopes) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
+                if (layout or ramp or portable_ramp or move_slope or build_slopes or maneuver_mode) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
                     return
                 keys.add(key)
                 if key == glfw.KEY_ESCAPE:
@@ -325,6 +333,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                     left = 'BUILD TWO SLOPES / RULE CONTROL\n\nPlace UP > Place DOWN > Cross\nOne simulation / no teleport or weld\nTop: 0.44 m / nominal joint gap: 0.05 m\nP: pause / resume | Esc: close'
                 if slope_plan:
                     left = 'CHAT AI PLAN / RULE EXECUTION\n\nPlan name: see window title\nPlace UP > Place DOWN > Cross\nNo fresh inference during replay\nTarget X: '+str(slope_plan['parts'][0]['x'])+' m\nP: pause / resume | Esc: close'
+                if maneuver_mode:
+                    left = 'EMPTY VEHICLE / RULE BASELINE\n\n'+maneuver_mode.upper()+'\nTarget: 1 m behind the initial vehicle\nGreen circle: target position\nNo learning / No API\nP: pause / resume | Esc: close'
                 right = ''
                 ui['message'] = f"{pilot.stage} {'(PAUSED)' if ui['paused'] else ''} | {pilot.reason}"
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
@@ -363,7 +373,10 @@ if __name__ == '__main__':
     parser.add_argument('--move-slope', choices=('up', 'down'), help='Carry one independent slope in an aligned lane.')
     parser.add_argument('--build-slopes', action='store_true', help='Place both slope parts and cross the assembled course.')
     parser.add_argument('--slope-plan', type=Path, help='Validate and replay a saved AI plan for slope construction.')
+    parser.add_argument('--maneuver', choices=('forward-only', 'reverse-enabled'), help='Empty-vehicle direction-choice comparison.')
     args = parser.parse_args()
+    if args.maneuver and any((args.move_slope, args.layout, args.plan, args.build, args.assemble, args.ramp, args.portable_ramp, args.build_slopes, args.slope_plan)):
+        parser.error('--maneuver is an independent empty-vehicle experiment')
     slope_plan = None
     if args.slope_plan:
         if any((args.move_slope, args.layout, args.plan, args.build, args.assemble, args.ramp, args.portable_ramp)):
@@ -398,4 +411,4 @@ if __name__ == '__main__':
         from ai_plan import load_plan
         driving_plan = load_plan(args.plan)
         target_layout = driving_plan['layout']
-    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp, args.move_slope, args.build_slopes, slope_plan))
+    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp, args.move_slope, args.build_slopes, slope_plan, args.maneuver))

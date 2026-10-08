@@ -1,4 +1,12 @@
-# 最新：チャットAI計画から坂の施工・走行・結果レビューまで接続
+# 最新：空荷の前後進選択と比較基準
+
+2026-10-09。Jevはユーザーと相談し要検討・未導入。次工程としてnavigation.Navigatorにallow_reverse=False既定の任意機能。目標方向誤差がpi/2+.2rad以上なら後退を選択し、到着まで方向固定。既存施工には有効化しない。maneuver.pyで空荷の独立シーン、app.py --maneuver forward-only/reverse-enabled、outputsとrepoにreverse-demo.cmd/forward-only-demo.cmd。
+
+verify_maneuver.pyで5開始条件×2方式が到達停止。前方1m3.82秒は同じ、真後ろ1m34.84→3.72秒、左右斜め後ろ31.58→5.50秒、初期90度で後方も34.84→3.72秒。真後ろの移動距離2.37→.862m、累積旋回280.7→0度。停止位置誤差.134〜.139m。制御からqpos直接変更なしを検査。後方に箱を置いた負例は接触で失敗停止。予測的回避ではない。
+
+最終向きの指定と精密な爪差し込みは未実装。ルール制御で学習なし・APIなし。結果examples/maneuver-result.jsonを学習前の比較基準として残す。次は姿勢目標・観測・成功基準を決めたお手本収集環境、または空荷工程への限定接続。ユーザーの録画は未変更。朝7時以降の夜間heartbeatは結果報告と停止。直前公開e2c849e0f2b6efc3b9b288d350ecc5f70a2ddadc/tree f873a6644d78aca808fadadac2ca59e9191e16d9。
+
+# 以前の進捗：チャットAI計画から坂の施工・走行・結果レビューまで接続
 
 2026-10-09。slope_plan.pyで限定したslope-course-v1形式の検証・実行・結果JSON出力。チャットでAIが「こもれびの小さな峠」と命名しX=1mの初案を生成、実行結果を読んで採用維持のreview.jsonを保存した。examples/ortiz-slope-plan.json / ortiz-slope-result.json / ortiz-slope-review.json。自動API呼出しや再生中の新しい推論・学習はない。名前・理由・許容位置の選択が上位AI、具体的な操作系列はルール。
 
