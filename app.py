@@ -17,17 +17,19 @@ import numpy as np
 from tracks import TrackAnimation
 
 ROOT = Path(__file__).resolve().parent
-OBJECTS = ['dozer', 'blade', 'block_1', 'block_2', 'block_3', 'block_4', 'ball', 'portable_ramp']
+OBJECTS = ['dozer', 'blade', 'block_1', 'block_2', 'block_3', 'block_4', 'ball', 'portable_ramp', 'up_1', 'down_1']
 CONTROL_DT = 0.02
 
 
 class Simulation:
-    def __init__(self, attachment='fork', layout=None, construction=False, ramp_height=None, portable_ramp=False):
+    def __init__(self, attachment='fork', layout=None, construction=False, ramp_height=None, portable_ramp=False, scene_xml=None):
         self.attachment = attachment
         self.scene_path = ROOT / ('scene_fork_tracks.xml' if attachment == 'fork' else 'scene_tracks.xml')
-        if portable_ramp:
+        if scene_xml is not None:
+            self.model = mujoco.MjModel.from_xml_string(scene_xml)
+        elif portable_ramp:
             from portable_ramp import portable_xml
-            self.model = mujoco.MjModel.from_xml_string(portable_xml(self.scene_path))
+            self.model = mujoco.MjModel.from_xml_string(portable_xml(self.scene_path, layout=layout))
         elif ramp_height is not None:
             from terrain import ramp_xml
             self.model = mujoco.MjModel.from_xml_string(ramp_xml(self.scene_path, ramp_height))
@@ -150,7 +152,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             pilot = RampPilot(sim)
         if portable_ramp:
             from portable_ramp import PortablePilot
-            pilot = PortablePilot(sim)
+            pilot = PortablePilot(sim, layout=layout)
         if pilot:
             if screenshot:
                 while not pilot.done:
@@ -336,8 +338,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.ramp and (args.layout or args.plan or args.build or args.assemble):
         parser.error('--ramp is an independent driving experiment')
-    if args.portable_ramp and (args.ramp or args.layout or args.plan or args.build or args.assemble):
-        parser.error('--portable-ramp is an independent construction experiment')
+    if args.portable_ramp and (args.ramp or args.plan or args.build or args.assemble):
+        parser.error('--portable-ramp accepts only an optional --layout')
     if args.assemble and not args.plan:
         parser.error('--assemble requires --plan')
     if args.plan and (args.layout or args.build):

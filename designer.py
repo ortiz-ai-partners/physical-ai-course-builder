@@ -44,14 +44,17 @@ class Handler(BaseHTTPRequestHandler):
         expected = f'http://127.0.0.1:{self.server.server_port}'
         if self.headers.get('Origin') != expected or self.headers.get('Host') != expected[7:]:
             return self.reply(403, {'error': 'この設計画面から操作してください。'})
-        if self.path not in ('/api/save', '/api/preview', '/api/build'):
+        if self.path not in ('/api/save', '/api/preview', '/api/build', '/api/build-ramp'):
             return self.reply(404, {'error': '見つかりません。'})
         try:
             size = int(self.headers.get('Content-Length', '0'))
             if not 0 < size < 16384:
                 raise ValueError('配置データのサイズが違います。')
             layout = validate_layout(json.loads(self.rfile.read(size)))
-            if self.path == '/api/build' and layout.get('ramps'):
+            if self.path == '/api/build-ramp':
+                from portable_ramp import validate_ramp_build
+                layout = validate_ramp_build(layout)
+            if self.path == '/api/build' and (layout.get('ramps') or layout.get('slopes')):
                 raise ValueError('坂道付き配置の施工はまだ未対応です。3Dプレビューで確認してください。')
             with self.server.save_lock:
                 folder = ROOT / 'designs'
@@ -62,15 +65,15 @@ class Handler(BaseHTTPRequestHandler):
                 temporary = folder / 'latest.tmp'
                 temporary.write_text(content, encoding='utf-8')
                 temporary.replace(folder / 'latest.json')
-                if self.path in ('/api/preview', '/api/build'):
+                if self.path in ('/api/preview', '/api/build', '/api/build-ramp'):
                     previous = self.server.preview_process
                     if previous is not None and previous.poll() is None:
                         return self.reply(409, {'error': '配置は保存しました。前の3Dプレビューを閉じてから、もう一度開いてください。'})
                     # This is an explicitly requested visible interactive window.
                     self.server.preview_process = subprocess.Popen(
                         [sys.executable, str(ROOT / 'app.py'), '--layout', str(path)]
-                        + (['--build'] if self.path == '/api/build' else []), cwd=ROOT)
-            self.reply(200, {'saved': path.name, 'preview': self.path == '/api/preview', 'build': self.path == '/api/build'})
+                        + (['--build'] if self.path == '/api/build' else ['--portable-ramp'] if self.path == '/api/build-ramp' else []), cwd=ROOT)
+            self.reply(200, {'saved': path.name, 'preview': self.path == '/api/preview', 'build': self.path == '/api/build', 'build_ramp': self.path == '/api/build-ramp'})
         except (ValueError, TypeError, OSError) as error:
             self.reply(400, {'error': str(error)})
 

@@ -24,6 +24,7 @@ class LayoutChecks(unittest.TestCase):
         """Exercise the real save/get/preview handler without network access."""
         value = copy.deepcopy(EXAMPLE)
         value['blocks'][0]['y'], value['blocks'][1]['y'] = 3, -3
+        value['blocks'][0]['x'] = value['blocks'][1]['x'] = 4
         value['ramps'] = [{'id': 'ramp_1', 'x': 1.5, 'y': 0, 'height': 0.44}]
         (designer.ROOT / '.test-results').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=designer.ROOT / '.test-results') as folder:
@@ -51,6 +52,13 @@ class LayoutChecks(unittest.TestCase):
                     self.assertEqual(post('/api/preview')[0], 409)
                     self.assertEqual(post('/api/build')[0], 400)
                     self.assertEqual(launch.call_count, 1)
+                    h.server.preview_process = None
+                    self.assertEqual(post('/api/build-ramp')[0], 200)
+                    self.assertIn('--portable-ramp', launch.call_args.args[0])
+                    self.assertEqual(launch.call_count, 2)
+                    value['ramps'][0]['y'] = 0.25
+                    self.assertEqual(post('/api/build-ramp')[0], 400)
+                    self.assertEqual(launch.call_count, 2)
 
     def test_save_reload_and_reject_invalid(self):
         old_root = designer.ROOT
