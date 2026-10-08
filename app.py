@@ -22,14 +22,14 @@ CONTROL_DT = 0.02
 
 
 class Simulation:
-    def __init__(self, attachment='fork', layout=None):
+    def __init__(self, attachment='fork', layout=None, construction=False):
         self.attachment = attachment
         self.scene_path = ROOT / ('scene_fork_tracks.xml' if attachment == 'fork' else 'scene_tracks.xml')
         if layout is None:
             self.model = mujoco.MjModel.from_xml_path(str(self.scene_path))
         else:
             from layout import preview_xml
-            self.model = mujoco.MjModel.from_xml_string(preview_xml(layout, self.scene_path))
+            self.model = mujoco.MjModel.from_xml_string(preview_xml(layout, self.scene_path, construction))
         self.data = mujoco.MjData(self.model)
         self.tracks = TrackAnimation(self.model)
         self.lift_target = 0.0
@@ -108,7 +108,7 @@ class Recorder:
             self.file = None
 
 
-def run(screenshot=None, smoke=False, layout=None):
+def run(screenshot=None, smoke=False, layout=None, construction=False):
     if not glfw.init():
         raise RuntimeError('OpenGL window could not initialize.')
     window = None
@@ -118,13 +118,20 @@ def run(screenshot=None, smoke=False, layout=None):
         if screenshot:
             glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
         glfw.window_hint(glfw.SAMPLES, 4)
-        title = 'Layout Preview | NOT a construction result' if layout else 'Bulldozer Lab | WASD + Space / Shift'
+        title = 'Auto Transport | RED BOX ONLY' if construction else 'Layout Preview | NOT a construction result' if layout else 'Bulldozer Lab | WASD + Space / Shift'
         window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
         glfw.make_context_current(window)
         glfw.swap_interval(1)
-        sim = Simulation(layout=layout)
+        sim = Simulation(layout=layout, construction=construction)
+        pilot = None
+        if construction:
+            from transport import Transport
+            pilot = Transport(sim, layout['blocks'][0])
+            if screenshot:
+                while not pilot.done:
+                    sim.step(*pilot.action(sim))
         camera = mujoco.MjvCamera()
         mujoco.mjv_defaultCamera(camera)
         camera.lookat[:] = [-0.3, 0, 0.1]
@@ -135,13 +142,13 @@ def run(screenshot=None, smoke=False, layout=None):
         scene = mujoco.MjvScene(sim.model, maxgeom=2000)
         context = mujoco.MjrContext(sim.model, mujoco.mjtFontScale.mjFONTSCALE_150)
         keys = set()
-        ui = {'paused': bool(layout), 'follow': False, 'message': 'Lower forks, slide under a box, then Space to lift. Q = slow drive.',
+        ui = {'paused': bool(layout) and not construction, 'follow': False, 'message': 'Lower forks, slide under a box, then Space to lift. Q = slow drive.',
               'mouse': None}
 
         def on_key(win, key, scancode, action, mods):
             nonlocal sim, scene, context
             if action == glfw.PRESS:
-                if layout and key not in (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2):
+                if layout and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if construction else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
                     return
                 keys.add(key)
                 if key == glfw.KEY_ESCAPE:
@@ -229,6 +236,8 @@ def run(screenshot=None, smoke=False, layout=None):
                 if glfw.KEY_Q in active:
                     action[0] *= 0.3
                     action[1] *= 0.3
+                if pilot:
+                    action = pilot.action(sim)
                 before = sim.observe() if recorder.file else None
                 controls = sim.step(*action)
                 if recorder.file:
@@ -252,10 +261,14 @@ def run(screenshot=None, smoke=False, layout=None):
             status = 'PAUSED' if ui['paused'] else ('RECORDING' if recorder.file else 'MANUAL / NO AI')
             left = 'TRACKED DOZER\n\nDrive\nLift\nAttachment\nRecord\nReset / Pause\nCamera\nView\nExit'
             right = f'{status}\n\nW A S D / hold Q: slow\nSpace UP / Shift DOWN\nT: {sim.attachment.upper()} (resets scene)\nF ({recorder.frames} steps)\nR / P\nDrag / wheel / C follow\n1 overview / 2 top\nEsc'
-            if layout:
+            if layout and not construction:
                 left = 'TARGET LAYOUT PREVIEW\n\nDesired final positions only\nNo autonomous construction / No AI\n\nCamera: drag / wheel\nView: 1 overview / 2 top\nClose: Esc'
                 right = ''
                 ui['message'] = 'Design preview. Boxes were placed directly for visualization, not moved by the robot.'
+            if pilot:
+                left = 'AUTO TRANSPORT / RULE CONTROL\n\nRED BOX ONLY / STRAIGHT LANE\nP: pause / resume | Esc: close\nView: 1 / 2 | Mouse: camera'
+                right = ''
+                ui['message'] = f"{pilot.stage} {'(PAUSED)' if ui['paused'] else ''} | {pilot.reason}"
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
                                viewport, left, right, context)
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_BOTTOMLEFT,
@@ -284,10 +297,13 @@ if __name__ == '__main__':
     parser.add_argument('--screenshot', type=Path)
     parser.add_argument('--smoke', action='store_true')
     parser.add_argument('--layout', type=Path, help='Preview a saved target layout; no driving or recording.')
+    parser.add_argument('--build', action='store_true', help='Carry red box in an initially aligned straight lane.')
     args = parser.parse_args()
+    if args.build and not args.layout:
+        parser.error('--build requires --layout')
     if args.layout:
         from layout import load_layout
         target_layout = load_layout(args.layout)
     else:
         target_layout = None
-    raise SystemExit(run(args.screenshot, args.smoke, target_layout))
+    raise SystemExit(run(args.screenshot, args.smoke, target_layout, args.build))

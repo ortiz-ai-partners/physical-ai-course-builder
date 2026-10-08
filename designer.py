@@ -44,7 +44,7 @@ class Handler(BaseHTTPRequestHandler):
         expected = f'http://127.0.0.1:{self.server.server_port}'
         if self.headers.get('Origin') != expected or self.headers.get('Host') != expected[7:]:
             return self.reply(403, {'error': 'この設計画面から操作してください。'})
-        if self.path not in ('/api/save', '/api/preview'):
+        if self.path not in ('/api/save', '/api/preview', '/api/build'):
             return self.reply(404, {'error': '見つかりません。'})
         try:
             size = int(self.headers.get('Content-Length', '0'))
@@ -60,14 +60,15 @@ class Handler(BaseHTTPRequestHandler):
                 temporary = folder / 'latest.tmp'
                 temporary.write_text(content, encoding='utf-8')
                 temporary.replace(folder / 'latest.json')
-                if self.path == '/api/preview':
+                if self.path in ('/api/preview', '/api/build'):
                     previous = self.server.preview_process
                     if previous is not None and previous.poll() is None:
                         return self.reply(409, {'error': '配置は保存しました。前の3Dプレビューを閉じてから、もう一度開いてください。'})
                     # This is an explicitly requested visible interactive window.
                     self.server.preview_process = subprocess.Popen(
-                        [sys.executable, str(ROOT / 'app.py'), '--layout', str(path)], cwd=ROOT)
-            self.reply(200, {'saved': path.name, 'preview': self.path == '/api/preview'})
+                        [sys.executable, str(ROOT / 'app.py'), '--layout', str(path)]
+                        + (['--build'] if self.path == '/api/build' else []), cwd=ROOT)
+            self.reply(200, {'saved': path.name, 'preview': self.path == '/api/preview', 'build': self.path == '/api/build'})
         except (ValueError, TypeError, OSError) as error:
             self.reply(400, {'error': str(error)})
 
