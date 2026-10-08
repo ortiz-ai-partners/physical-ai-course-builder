@@ -24,7 +24,7 @@ class LayoutChecks(unittest.TestCase):
         """Exercise the real save/get/preview handler without network access."""
         value = copy.deepcopy(EXAMPLE)
         value['blocks'][0]['y'], value['blocks'][1]['y'] = 3, -3
-        value['ramps'] = [{'id': 'ramp_1', 'x': 1.5, 'y': 0, 'height': 0.3}]
+        value['ramps'] = [{'id': 'ramp_1', 'x': 1.5, 'y': 0, 'height': 0.44}]
         (designer.ROOT / '.test-results').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=designer.ROOT / '.test-results') as folder:
             with patch.object(designer, 'ROOT', Path(folder)):

@@ -18,11 +18,11 @@
 <g class="block" id="block_1" tabindex="0" role="button" aria-label="赤い箱。矢印キーでも移動できます"><rect x="-.22" y="-.24" width=".44" height=".48" rx=".035" fill="#dd6653"/><text text-anchor="middle" dy=".065">1</text></g>
 <g class="block" id="block_2" tabindex="0" role="button" aria-label="青い箱。矢印キーでも移動できます"><rect x="-.22" y="-.24" width=".44" height=".48" rx=".035" fill="#4783ae"/><text text-anchor="middle" dy=".065">2</text></g>
 </svg><div class="footer">箱を選んで矢印キーでも移動できます。箱の大きさは44 × 48cm。図面の上が＋Y、右が＋Xです。</div></section>
-<aside><h2>コースをつくる</h2><p class="hint">箱は2個、坂道は1個まで。ドラッグか矢印キーで動かせます。</p>
+<aside><h2>コースをつくる</h2><p class="hint">箱は2個、坂道は1個まで。標準の天面は共通の44cm。ドラッグか矢印キーで動かせます。</p>
 <div class="row"><span class="dot" style="background:#dd6653"></span>赤い箱 <span id="pos1" class="value"></span></div>
 <div class="row"><span class="dot" style="background:#4783ae"></span>青い箱 <span id="pos2" class="value"></span></div>
 <div class="row">坂道 <span id="rampPos" class="value">なし</span></div>
-<p><label for="rampHeight">坂道の高さ </label><select id="rampHeight"><option value="0.2">20cm</option><option value="0.3" selected>30cm</option><option value="0.4">40cm</option></select></p>
+<p><label for="rampHeight">坂道の高さ </label><select id="rampHeight"><option value="0.44" selected>44cm · ブロックと共通</option><option value="0.2">20cm · 旧規格</option><option value="0.3">30cm · 旧規格</option><option value="0.4">40cm · 旧規格</option></select></p>
 <button id="toggleRamp">坂道を追加</button><button id="rampExample">坂道コースの例を置く</button>
 <p id="gap" class="hint"></p><button id="undo">ひとつ戻す</button><button id="reset">門の配置に戻す</button><button id="save" class="primary">この配置を保存</button><button id="preview">保存して3Dで見る</button>
 <button id="build" class="primary">赤い箱を自動で運ぶ</button><p class="hint">直線運搬の実験：車両と赤い箱を同じ進路上に置いて開始します。青い箱は今回運びません。Pで一時停止できます。</p>
@@ -43,8 +43,8 @@ function items(){return [...model.blocks,...(model.ramps||[])]}
 function move(b,x,y){const ramp=b.id==='ramp_1';b.x=Math.max(-1,Math.min(4,Math.round(x*4)/4));b.y=Math.max(ramp?-2:-3,Math.min(ramp?2:3,Math.round(y*4)/4));message('配置を変更しました。保存すると次回も開けます。');draw()}
 function point(e){const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());return {x:p.x,y:-p.y}}
 for(const id of ['block_1','block_2','ramp_1']){const el=document.getElementById(id);el.addEventListener('pointerdown',e=>{if(busy)return;const block=items().find(x=>x.id===el.id),p=point(e);if(!block)return;remember();drag={id:el.id,dx:block.x-p.x,dy:block.y-p.y};el.setPointerCapture(e.pointerId);el.focus();e.preventDefault()});el.addEventListener('pointermove',e=>{if(!drag||drag.id!==el.id)return;const p=point(e);move(items().find(x=>x.id===el.id),p.x+drag.dx,p.y+drag.dy)});el.addEventListener('pointerup',()=>{drag=null;draw()});el.addEventListener('pointercancel',()=>{drag=null;draw()});el.addEventListener('keydown',e=>{const d={ArrowLeft:[-.25,0],ArrowRight:[.25,0],ArrowUp:[0,.25],ArrowDown:[0,-.25]}[e.key];if(!d||busy)return;e.preventDefault();const b=items().find(x=>x.id===el.id);if(!b)return;remember();move(b,b.x+d[0],b.y+d[1])})}
-document.querySelector('#toggleRamp').onclick=()=>{if(busy)return;remember();model.ramps=model.ramps?.length?[]:[{id:'ramp_1',x:1.5,y:0,height:.3,yaw:0}];message('坂道の配置を変更しました。');draw()};
-document.querySelector('#rampExample').onclick=()=>{if(busy)return;remember();model=initial();model.blocks[0].x=model.blocks[1].x=0;model.blocks[0].y=3;model.blocks[1].y=-3;model.ramps=[{id:'ramp_1',x:1.5,y:0,height:.3,yaw:0}];message('坂道コースの例を置きました。元の配置へは「ひとつ戻す」で戻れます。');draw()};
+document.querySelector('#toggleRamp').onclick=()=>{if(busy)return;remember();model.ramps=model.ramps?.length?[]:[{id:'ramp_1',x:1.5,y:0,height:.44,yaw:0}];message('坂道の配置を変更しました。');draw()};
+document.querySelector('#rampExample').onclick=()=>{if(busy)return;remember();model=initial();model.blocks[0].x=model.blocks[1].x=0;model.blocks[0].y=3;model.blocks[1].y=-3;model.ramps=[{id:'ramp_1',x:1.5,y:0,height:.44,yaw:0}];message('坂道コースの例を置きました。元の配置へは「ひとつ戻す」で戻れます。');draw()};
 document.querySelector('#rampHeight').onchange=e=>{if(busy||!model.ramps?.length)return;remember();model.ramps[0].height=Number(e.target.value);message('坂道の高さを変更しました。');draw()};
 document.querySelector('#undo').onclick=()=>{if(history.length){model=JSON.parse(history.pop());message('ひとつ前の配置に戻しました。');draw()}};
 document.querySelector('#reset').onclick=()=>{if(busy)return;remember();model=initial();message('門の配置に戻しました。保存はまだしていません。');draw()};

@@ -297,7 +297,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                 if ramp:
                     left = 'RAMP CROSSING / RULE CONTROL\n\nStatic ramp / not built by the vehicle\nPhysical wheel contact / height 0.35 m\nP: pause / resume | Esc: close'
                 if portable_ramp:
-                    left = 'PORTABLE RAMP / RULE CONTROL\n\nLift > Carry > Place > Cross\nOne simulation / no teleport or weld\nPrototype: 3.6 x 1 x 0.3 m / 3 kg\nP: pause / resume | Esc: close'
+                    left = 'PORTABLE RAMP / RULE CONTROL\n\nLift > Carry > Place > Cross\nOne simulation / no teleport or weld\nShared top: 0.44 m / Slope: 16.3 deg\nP: pause / resume | Esc: close'
                 right = ''
                 ui['message'] = f"{pilot.stage} {'(PAUSED)' if ui['paused'] else ''} | {pilot.reason}"
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
