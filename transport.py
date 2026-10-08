@@ -8,8 +8,10 @@ import numpy as np
 
 
 class Transport:
-    def __init__(self, sim, target, box_name="block_1"):
+    def __init__(self, sim, target, box_name="block_1", pickup_distance=1.0, release_distance=1.72):
         self.box_name = box_name
+        self.pickup_distance = pickup_distance
+        self.release_distance = release_distance
         self.target = np.array([target['x'], target['y']], dtype=float)
         self.stage = 'INSERT'
         self.elapsed = 0
@@ -61,7 +63,7 @@ class Transport:
             self.fail('Box left the straight transport lane.')
             return (0, 0, 0)
         if self.stage == 'INSERT':
-            if box[0] - base[0] <= 1.00:
+            if box[0] - base[0] <= self.pickup_distance:
                 self.change('LIFT')
             else:
                 return (0.25, 0, 0)
@@ -92,7 +94,7 @@ class Transport:
                 self.change('WITHDRAW')
             return (0, 0, 0)
         if self.stage == 'WITHDRAW':
-            if box[0] - base[0] > 1.72:
+            if box[0] - base[0] > self.release_distance:
                 self.change('CHECK')
             else:
                 return (-0.45 if box[0] - base[0] > 1.45 else -0.30, 0, 0)
@@ -102,7 +104,7 @@ class Transport:
             speed = float(np.linalg.norm(sim.data.qvel[dof:dof+3]))
             error = float(np.linalg.norm(box[:2] - self.target))
             self.success = (error < 0.06 and abs(rise) < 0.02 and speed < 0.02
-                            and box[0] - base[0] > 1.65 and self.max_rise > 0.15
+                            and box[0] - base[0] > self.release_distance - 0.07 and self.max_rise > 0.15
                             and self.raised_travel > 0.3)
             self.done = True
             self.stage = 'COMPLETE' if self.success else 'STOPPED'
