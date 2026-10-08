@@ -116,7 +116,7 @@ class Recorder:
             self.file = None
 
 
-def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False):
+def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False, slope_plan=None):
     if not glfw.init():
         raise RuntimeError('OpenGL window could not initialize.')
     window = None
@@ -135,6 +135,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             title = 'Single slope transport | '+move_slope
         if build_slopes:
             title = 'Build two slopes and cross | rule control'
+        if slope_plan:
+            title = slope_plan['name']+' | saved AI plan / rule execution'
         window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
@@ -169,7 +171,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             pilot = slope_pilot(sim, move_slope)
         if build_slopes:
             from slope_assembly import SlopeAssembly
-            pilot = SlopeAssembly(sim)
+            pilot = SlopeAssembly(sim, target_x=slope_plan['parts'][0]['x'] if slope_plan else 1.5)
         if pilot:
             if screenshot:
                 while not pilot.done:
@@ -321,6 +323,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                     left = f'SINGLE {move_slope.upper()} SLOPE / RULE CONTROL\n\nLift > Carry > Place\nOffset pickup rail / no weld\nTop: 0.44 m / provisional mass: 1.5 kg\nP: pause / resume | Esc: close'
                 if build_slopes:
                     left = 'BUILD TWO SLOPES / RULE CONTROL\n\nPlace UP > Place DOWN > Cross\nOne simulation / no teleport or weld\nTop: 0.44 m / nominal joint gap: 0.05 m\nP: pause / resume | Esc: close'
+                if slope_plan:
+                    left = 'CHAT AI PLAN / RULE EXECUTION\n\nPlan name: see window title\nPlace UP > Place DOWN > Cross\nNo fresh inference during replay\nTarget X: '+str(slope_plan['parts'][0]['x'])+' m\nP: pause / resume | Esc: close'
                 right = ''
                 ui['message'] = f"{pilot.stage} {'(PAUSED)' if ui['paused'] else ''} | {pilot.reason}"
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
@@ -358,7 +362,18 @@ if __name__ == '__main__':
     parser.add_argument('--portable-ramp', action='store_true', help='Lift, transport, place and cross a free-body ramp.')
     parser.add_argument('--move-slope', choices=('up', 'down'), help='Carry one independent slope in an aligned lane.')
     parser.add_argument('--build-slopes', action='store_true', help='Place both slope parts and cross the assembled course.')
+    parser.add_argument('--slope-plan', type=Path, help='Validate and replay a saved AI plan for slope construction.')
     args = parser.parse_args()
+    slope_plan = None
+    if args.slope_plan:
+        if any((args.move_slope, args.layout, args.plan, args.build, args.assemble, args.ramp, args.portable_ramp)):
+            parser.error('--slope-plan cannot be combined with other course modes')
+        from slope_plan import load_plan as load_slope_plan
+        try:
+            slope_plan = load_slope_plan(args.slope_plan)
+        except (ValueError, OSError) as exc:
+            parser.error(str(exc))
+        args.build_slopes = True
     if args.build_slopes and (args.move_slope or args.layout or args.plan or args.build or args.assemble or args.ramp or args.portable_ramp):
         parser.error('--build-slopes uses a fixed two-piece course')
     if args.move_slope and (args.layout or args.plan or args.build or args.assemble or args.ramp or args.portable_ramp):
@@ -383,4 +398,4 @@ if __name__ == '__main__':
         from ai_plan import load_plan
         driving_plan = load_plan(args.plan)
         target_layout = driving_plan['layout']
-    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp, args.move_slope, args.build_slopes))
+    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp, args.move_slope, args.build_slopes, slope_plan))

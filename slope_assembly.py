@@ -27,7 +27,8 @@ def assembly_xml(scene_path):
 
 
 class SlopeAssembly:
-    def __init__(self,sim):
+    def __init__(self,sim,target_x=1.5):
+        self.target_x=float(target_x)
         self.phase='UP'
         self.stage=self.phase
         self.reason=''
@@ -37,7 +38,7 @@ class SlopeAssembly:
         self.results=[]
         self.max_rise=0.0
         self.touched=set()
-        self.pilot=Transport(sim,{'x':1.5,'y':-1},'up_1',1.28,2.05,lane_y=-.75)
+        self.pilot=Transport(sim,{'x':self.target_x,'y':-1},'up_1',1.28,2.05,lane_y=-.75)
         self.surfaces={sim.model.geom(n+s).id for n in ('up_1','down_1') for s in ('_incline','_landing')}
         self.wheels={sim.model.body(n).id for n in ('left_front','left_rear','right_front','right_rear')}
 
@@ -77,7 +78,7 @@ class SlopeAssembly:
                     self.phase='RAISE_UP' if self.phase=='UP' else 'RAISE_DOWN'
                 elif self.phase=='TO_DOWN':self.phase='PRECISE_LANE'
                 elif self.phase=='TO_START':
-                    self.phase='CROSS';self.pilot=Navigator(sim,[[1.5,3.2]])
+                    self.phase='CROSS';self.pilot=Navigator(sim,[[self.target_x,3.2]])
                 else:
                     self.success=self.max_rise>.42 and self.touched==self.surfaces
                     return self.stop(f'Placed 2 slopes; crossed {len(self.touched)}/4 surfaces; rise {self.max_rise:.3f} m')
@@ -87,7 +88,7 @@ class SlopeAssembly:
             if self.phase=='RAISE_UP':
                 self.phase='TO_DOWN';self.pilot=Navigator(sim,[[-3.3,-.75],[-3.3,.8]])
             else:
-                self.phase='TO_START';self.pilot=Navigator(sim,[[-1,.75],[-1,-3.2],[1.5,-3.2]])
+                self.phase='TO_START';self.pilot=Navigator(sim,[[-1,.75],[-1,-3.2],[self.target_x,-3.2]])
             return (0,0,0)
         if self.phase=='PRECISE_LANE':
             w,x,y,z=sim.data.body('dozer').xquat
@@ -108,6 +109,6 @@ class SlopeAssembly:
         if self.phase=='LOWER':
             if sim.lift_target>0:return (0,0,-1)
             self.phase='DOWN'
-            self.pilot=Transport(sim,{'x':1.5,'y':1.05},'down_1',1.28,2.05,lane_y=.8,align_before_lift=True)
+            self.pilot=Transport(sim,{'x':self.target_x,'y':1.05},'down_1',1.28,2.05,lane_y=.8,align_before_lift=True)
             return (0,0,0)
         raise RuntimeError(self.phase)
