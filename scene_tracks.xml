@@ -1,0 +1,186 @@
+<mujoco model="Bulldozer Playground">
+  <compiler angle="degree" autolimits="true" />
+  <option timestep="0.005" integrator="implicitfast" cone="elliptic" iterations="60" />
+  <visual>
+    <global offwidth="1280" offheight="800" />
+    <quality shadowsize="2048" />
+    <headlight ambient="0.2 0.2 0.2" diffuse="0.4 0.4 0.4" />
+    <map znear="0.01" />
+  </visual>
+  <default>
+    <geom friction="0.7 0.005 0.0001" solref="0.012 1" solimp="0.95 0.99 0.001" />
+    <joint damping="0.05" armature="0.01" />
+    <default class="decor">
+      <geom contype="0" conaffinity="0" mass="0" />
+    </default>
+    <default class="wheel">
+      <joint type="hinge" axis="0 1 0" />
+      <geom type="cylinder" size="0.18 0.065" quat="0.70710678 0.70710678 0 0" rgba="0.075 0.09 0.11 1" mass="0.65" friction="1.0 0.005 0.0001" condim="4" />
+    </default>
+  </default>
+  <asset>
+    <texture name="floor_tex" type="2d" builtin="checker" rgb1="0.72 0.80 0.79" rgb2="0.77 0.84 0.82" width="512" height="512" />
+    <material name="floor" texture="floor_tex" texrepeat="12 9" reflectance="0.05" />
+    <material name="yellow" rgba="1 0.68 0.08 1" specular="0.35" shininess="0.3" />
+    <material name="dark" rgba="0.12 0.17 0.21 1" />
+  </asset>
+  <worldbody>
+    <light pos="-3 -3 7" dir="0.3 0.3 -1" directional="true" diffuse="0.5 0.5 0.5" />
+    <geom name="floor" type="plane" size="6 4.5 0.1" material="floor" />
+    <geom type="box" pos="0 4.6 0.3" size="6.1 0.1 0.3" rgba="0.17 0.37 0.4 1" />
+    <geom type="box" pos="0 -4.6 0.3" size="6.1 0.1 0.3" rgba="0.17 0.37 0.4 1" />
+    <geom type="box" pos="6.1 0 0.3" size="0.1 4.5 0.3" rgba="0.17 0.37 0.4 1" />
+    <geom type="box" pos="-6.1 0 0.3" size="0.1 4.5 0.3" rgba="0.17 0.37 0.4 1" />
+    <geom class="decor" type="box" pos="2.5 0 0.002" size="0.55 0.65 0.002" rgba="0.3 0.75 0.57 0.6" />
+    <geom class="decor" type="box" pos="2.5 1.6 0.002" size="0.55 0.65 0.002" rgba="0.3 0.75 0.57 0.6" />
+    <geom class="decor" type="box" pos="2.5 -1.6 0.002" size="0.55 0.65 0.002" rgba="0.3 0.75 0.57 0.6" />
+    <body name="dozer" pos="-3 0 0.30">
+      <freejoint name="base" />
+      <geom name="chassis" type="box" size="0.43 0.27 0.13" mass="15" material="yellow" />
+      <geom class="decor" type="box" pos="-0.13 0 0.25" size="0.23 0.24 0.19" material="dark" />
+      <geom class="decor" type="box" pos="-0.13 0 0.46" size="0.28 0.29 0.035" material="yellow" />
+      <geom class="decor" type="box" pos="0.106 0 0.28" size="0.005 0.2 0.11" rgba="0.3 0.72 0.8 1" />
+      <geom class="decor" type="box" pos="-0.13 -0.245 0.28" size="0.18 0.005 0.11" rgba="0.3 0.72 0.8 1" />
+      <geom class="decor" type="box" pos="-0.13 0.245 0.28" size="0.18 0.005 0.11" rgba="0.3 0.72 0.8 1" />
+      <geom class="decor" type="cylinder" pos="0.30 -0.17 0.3" size="0.026 0.16" material="dark" />
+      <geom class="decor" type="box" pos="0.42 -0.18 0.06" size="0.015 0.055 0.035" rgba="1 0.97 0.7 1" />
+      <geom class="decor" type="box" pos="0.42 0.18 0.06" size="0.015 0.055 0.035" rgba="1 0.97 0.7 1" />
+      <body name="left_front" pos="0.29 0.34 -0.12">
+        <joint name="lf" class="wheel" />
+        <geom class="wheel" />
+        <geom class="decor" type="cylinder" pos="0 0.068 0" size="0.095 0.007" quat="0.7071 0.7071 0 0" material="yellow" />
+      </body>
+      <body name="left_rear" pos="-0.29 0.34 -0.12">
+        <joint name="lr" class="wheel" />
+        <geom class="wheel" />
+        <geom class="decor" type="cylinder" pos="0 0.068 0" size="0.095 0.007" quat="0.7071 0.7071 0 0" material="yellow" />
+      </body>
+      <body name="right_front" pos="0.29 -0.34 -0.12">
+        <joint name="rf" class="wheel" />
+        <geom class="wheel" />
+        <geom class="decor" type="cylinder" pos="0 -0.068 0" size="0.095 0.007" quat="0.7071 0.7071 0 0" material="yellow" />
+      </body>
+      <body name="right_rear" pos="-0.29 -0.34 -0.12">
+        <joint name="rr" class="wheel" />
+        <geom class="wheel" />
+        <geom class="decor" type="cylinder" pos="0 -0.068 0" size="0.095 0.007" quat="0.7071 0.7071 0 0" material="yellow" />
+      </body>
+      <body name="blade" pos="0.72 0 -0.14">
+        <joint name="lift" type="slide" axis="0 0 1" range="0 0.5" damping="15" />
+        <geom name="blade_face" type="box" size="0.055 0.56 0.14" mass="1.5" material="yellow" />
+        <geom type="box" pos="0.035 0 -0.125" size="0.06 0.57 0.02" mass="0.2" material="dark" />
+        <geom class="decor" type="capsule" fromto="-0.4 0.22 0.03 -0.06 0.4 0.03" size="0.035" material="dark" />
+        <geom class="decor" type="capsule" fromto="-0.4 -0.22 0.03 -0.06 -0.4 0.03" size="0.035" material="dark" />
+      </body>
+      <geom class="decor" type="box" pos="0 0.34 -.12" size=".29 .064 .125" rgba=".065 .078 .09 1" />
+      <geom class="decor" type="cylinder" pos="-0.13 0.409 -.14" size=".09 .006" quat=".70710678 .70710678 0 0" material="yellow" />
+      <geom class="decor" type="cylinder" pos="0.13 0.409 -.14" size=".09 .006" quat=".70710678 .70710678 0 0" material="yellow" />
+      <geom name="track_left_0" class="decor" type="box" pos="-0.29 0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_1" class="decor" type="box" pos="-0.2316953912735218 0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_2" class="decor" type="box" pos="-0.17339078254704363 0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_3" class="decor" type="box" pos="-0.11508617382056546 0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_4" class="decor" type="box" pos="-0.05678156509408727 0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_5" class="decor" type="box" pos="0.0015230436323909191 0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_6" class="decor" type="box" pos="0.059827652358869055 0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_7" class="decor" type="box" pos="0.11813226108534725 0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_8" class="decor" type="box" pos="0.17643686981182544 0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_9" class="decor" type="box" pos="0.23474147853830368 0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_10" class="decor" type="box" pos="0.29304592036719 0.34 0.04797238573383644" quat="0.9999589064976805 0 0.009065611725802098 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_11" class="decor" type="box" pos="0.3499961543257781 0.34 0.03692183234374183" quat="0.9833764604299836 0 0.18157845982438814 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_12" class="decor" type="box" pos="0.3997924168313776 0.34 0.007159841169785325" quat="0.9372576530727336 0 0.34863747899012715 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_13" class="decor" type="box" pos="0.4364969766338123 0.34 -0.03776475307295389" quat="0.8629876932560782 0 0.505224941277203 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_14" class="decor" type="box" pos="0.45573316366194205 0.34 -0.0924951192948609" quat="0.7627973282618328 0 0.6466376388647739 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_15" class="decor" type="box" pos="0.4552072453522372 0.34 -0.1505051812504972" quat="0.6396958418559604 0 0.768628148009292 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_16" class="decor" type="box" pos="0.4349819324670211 0.34 -0.2048777901345702" quat="0.4973806684637012 0 0.8675324032211141 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_17" class="decor" type="box" pos="0.3974689014318012 0.34 -0.2491295288655612" quat="0.3401263382852813 0 0.9403797498907802 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_18" class="decor" type="box" pos="0.3471412248319271 0.34 -0.2779837979816511" quat="0.17265608895897566 0 0.9849821698616632 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_19" class="decor" type="box" pos="0.28999999999999987 0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_20" class="decor" type="box" pos="0.23169539127352162 0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_21" class="decor" type="box" pos="0.17339078254704338 0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_22" class="decor" type="box" pos="0.11508617382056535 0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_23" class="decor" type="box" pos="0.056781565094087105 0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_24" class="decor" type="box" pos="-0.0015230436323909191 0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_25" class="decor" type="box" pos="-0.059827652358869166 0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_26" class="decor" type="box" pos="-0.11813226108534741 0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_27" class="decor" type="box" pos="-0.17643686981182544 0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_28" class="decor" type="box" pos="-0.2347414785383038 0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_29" class="decor" type="box" pos="-0.2930459203671899 0.34 -0.28797238573383643" quat="-0.009065611725801705 0 0.9999589064976805 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_30" class="decor" type="box" pos="-0.3499961543257781 0.34 -0.2769218323437418" quat="-0.18157845982438808 0 0.9833764604299836 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_31" class="decor" type="box" pos="-0.3997924168313777 0.34 -0.24715984116978526" quat="-0.3486374789901274 0 0.9372576530727335 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_32" class="decor" type="box" pos="-0.4364969766338124 0.34 -0.20223524692704603" quat="-0.5052249412772031 0 0.862987693256078 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_33" class="decor" type="box" pos="-0.45573316366194205 0.34 -0.1475048807051389" quat="-0.6466376388647745 0 0.7627973282618322 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_34" class="decor" type="box" pos="-0.4552072453522372 0.34 -0.08949481874950248" quat="-0.7686281480092925 0 0.63969584185596 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_35" class="decor" type="box" pos="-0.43498193246702094 0.34 -0.03512220986542956" quat="-0.8675324032211146 0 0.4973806684637003 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_36" class="decor" type="box" pos="-0.397468901431801 0.34 0.009129528865561343" quat="-0.9403797498907804 0 0.34012633828528077 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_left_37" class="decor" type="box" pos="-0.34714122483192733 0.34 0.03798379798165108" quat="-0.9849821698616631 0 0.17265608895897636 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom class="decor" type="box" pos="0 -0.34 -.12" size=".29 .064 .125" rgba=".065 .078 .09 1" />
+      <geom class="decor" type="cylinder" pos="-0.13 -0.409 -.14" size=".09 .006" quat=".70710678 .70710678 0 0" material="yellow" />
+      <geom class="decor" type="cylinder" pos="0.13 -0.409 -.14" size=".09 .006" quat=".70710678 .70710678 0 0" material="yellow" />
+      <geom name="track_right_0" class="decor" type="box" pos="-0.29 -0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_1" class="decor" type="box" pos="-0.2316953912735218 -0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_2" class="decor" type="box" pos="-0.17339078254704363 -0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_3" class="decor" type="box" pos="-0.11508617382056546 -0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_4" class="decor" type="box" pos="-0.05678156509408727 -0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_5" class="decor" type="box" pos="0.0015230436323909191 -0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_6" class="decor" type="box" pos="0.059827652358869055 -0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_7" class="decor" type="box" pos="0.11813226108534725 -0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_8" class="decor" type="box" pos="0.17643686981182544 -0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_9" class="decor" type="box" pos="0.23474147853830368 -0.34 0.048000000000000015" quat="1.0 0 0.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_10" class="decor" type="box" pos="0.29304592036719 -0.34 0.04797238573383644" quat="0.9999589064976805 0 0.009065611725802098 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_11" class="decor" type="box" pos="0.3499961543257781 -0.34 0.03692183234374183" quat="0.9833764604299836 0 0.18157845982438814 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_12" class="decor" type="box" pos="0.3997924168313776 -0.34 0.007159841169785325" quat="0.9372576530727336 0 0.34863747899012715 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_13" class="decor" type="box" pos="0.4364969766338123 -0.34 -0.03776475307295389" quat="0.8629876932560782 0 0.505224941277203 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_14" class="decor" type="box" pos="0.45573316366194205 -0.34 -0.0924951192948609" quat="0.7627973282618328 0 0.6466376388647739 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_15" class="decor" type="box" pos="0.4552072453522372 -0.34 -0.1505051812504972" quat="0.6396958418559604 0 0.768628148009292 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_16" class="decor" type="box" pos="0.4349819324670211 -0.34 -0.2048777901345702" quat="0.4973806684637012 0 0.8675324032211141 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_17" class="decor" type="box" pos="0.3974689014318012 -0.34 -0.2491295288655612" quat="0.3401263382852813 0 0.9403797498907802 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_18" class="decor" type="box" pos="0.3471412248319271 -0.34 -0.2779837979816511" quat="0.17265608895897566 0 0.9849821698616632 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_19" class="decor" type="box" pos="0.28999999999999987 -0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_20" class="decor" type="box" pos="0.23169539127352162 -0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_21" class="decor" type="box" pos="0.17339078254704338 -0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_22" class="decor" type="box" pos="0.11508617382056535 -0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_23" class="decor" type="box" pos="0.056781565094087105 -0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_24" class="decor" type="box" pos="-0.0015230436323909191 -0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_25" class="decor" type="box" pos="-0.059827652358869166 -0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_26" class="decor" type="box" pos="-0.11813226108534741 -0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_27" class="decor" type="box" pos="-0.17643686981182544 -0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_28" class="decor" type="box" pos="-0.2347414785383038 -0.34 -0.28800000000000003" quat="6.123233995736766e-17 0 1.0 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_29" class="decor" type="box" pos="-0.2930459203671899 -0.34 -0.28797238573383643" quat="-0.009065611725801705 0 0.9999589064976805 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_30" class="decor" type="box" pos="-0.3499961543257781 -0.34 -0.2769218323437418" quat="-0.18157845982438808 0 0.9833764604299836 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_31" class="decor" type="box" pos="-0.3997924168313777 -0.34 -0.24715984116978526" quat="-0.3486374789901274 0 0.9372576530727335 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_32" class="decor" type="box" pos="-0.4364969766338124 -0.34 -0.20223524692704603" quat="-0.5052249412772031 0 0.862987693256078 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_33" class="decor" type="box" pos="-0.45573316366194205 -0.34 -0.1475048807051389" quat="-0.6466376388647745 0 0.7627973282618322 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_34" class="decor" type="box" pos="-0.4552072453522372 -0.34 -0.08949481874950248" quat="-0.7686281480092925 0 0.63969584185596 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_35" class="decor" type="box" pos="-0.43498193246702094 -0.34 -0.03512220986542956" quat="-0.8675324032211146 0 0.4973806684637003 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_36" class="decor" type="box" pos="-0.397468901431801 -0.34 0.009129528865561343" quat="-0.9403797498907804 0 0.34012633828528077 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+      <geom name="track_right_37" class="decor" type="box" pos="-0.34714122483192733 -0.34 0.03798379798165108" quat="-0.9849821698616631 0 0.17265608895897636 0" size=".025 .082 .012" rgba=".12 .145 .16 1" />
+    </body>
+    <body name="block_1" pos="-1.5 0 0.18">
+      <freejoint />
+      <geom type="box" size="0.22 0.24 0.18" mass="0.7" rgba="0.95 0.36 0.28 1" />
+    </body>
+    <body name="block_2" pos="-0.6 1.6 0.18">
+      <freejoint />
+      <geom type="box" size="0.22 0.24 0.18" mass="0.7" rgba="0.25 0.57 0.90 1" />
+    </body>
+    <body name="block_3" pos="-0.6 -1.6 0.18">
+      <freejoint />
+      <geom type="box" size="0.22 0.24 0.18" mass="0.7" rgba="0.96 0.63 0.22 1" />
+    </body>
+    <body name="block_4" pos="1 2.7 0.18">
+      <freejoint />
+      <geom type="box" size="0.22 0.24 0.18" mass="0.7" rgba="0.64 0.47 0.84 1" />
+    </body>
+    <body name="ball" pos="1.2 -2.7 0.20">
+      <freejoint />
+      <geom type="sphere" size="0.20" mass="0.25" rgba="0.97 0.87 0.36 1" friction="0.7 0.015 0.002" condim="6" />
+    </body>
+  </worldbody>
+  <actuator>
+    <velocity name="drive_lf" joint="lf" kv="8" ctrlrange="-8 8" forcerange="-15 15" />
+    <velocity name="drive_lr" joint="lr" kv="8" ctrlrange="-8 8" forcerange="-15 15" />
+    <velocity name="drive_rf" joint="rf" kv="8" ctrlrange="-8 8" forcerange="-15 15" />
+    <velocity name="drive_rr" joint="rr" kv="8" ctrlrange="-8 8" forcerange="-15 15" />
+    <position name="blade_lift" joint="lift" kp="1200" ctrlrange="0 0.5" forcerange="-250 250" />
+  </actuator>
+</mujoco>
