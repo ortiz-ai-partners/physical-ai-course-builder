@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.cache/
+.pytest_cache/
+.test-results/
+recordings/
+*.log
+*.npz
+*.pt
+*.pth
+*.safetensors
+.DS_Store
+Thumbs.db
