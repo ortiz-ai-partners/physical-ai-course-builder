@@ -1,0 +1,168 @@
+{
+  "schema": "pose-evaluation-v1",
+  "trials": [
+    {
+      "case": "back",
+      "case_split": "train",
+      "success": false,
+      "reason": "Time limit (120 seconds)",
+      "seconds": 120.02,
+      "distance_m": 5.965750661491698,
+      "reverse_steps": 0,
+      "final_metrics": {
+        "position_error_m": 0.1477289743750472,
+        "heading_error_deg": 145.5065219677032,
+        "speed_m_s": 0.04019272370253138,
+        "angular_speed_rad_s": 0.16736992203366458
+      },
+      "controller": "forward_rules"
+    },
+    {
+      "case": "back",
+      "case_split": "train",
+      "success": true,
+      "reason": "Position + heading matched; stopped for one second",
+      "seconds": 5.66,
+      "distance_m": 0.9607787183371638,
+      "reverse_steps": 234,
+      "final_metrics": {
+        "position_error_m": 0.039291873861582394,
+        "heading_error_deg": 0.0,
+        "speed_m_s": 7.802524411571422e-17,
+        "angular_speed_rad_s": 5.804300115563774e-19
+      },
+      "controller": "reverse_rules"
+    },
+    {
+      "case": "front",
+      "case_split": "train",
+      "success": true,
+      "reason": "Position + heading matched; stopped for one second",
+      "seconds": 5.66,
+      "distance_m": 0.9607688749493445,
+      "reverse_steps": 0,
+      "final_metrics": {
+        "position_error_m": 0.03929091410848562,
+        "heading_error_deg": 0.0,
+        "speed_m_s": 9.735878562646969e-17,
+        "angular_speed_rad_s": 5.06728996184514e-18
+      },
+      "controller": "forward_rules"
+    },
+    {
+      "case": "front",
+      "case_split": "train",
+      "success": true,
+      "reason": "Position + heading matched; stopped for one second",
+      "seconds": 5.66,
+      "distance_m": 0.9607688749493445,
+      "reverse_steps": 0,
+      "final_metrics": {
+        "position_error_m": 0.03929091410848562,
+        "heading_error_deg": 0.0,
+        "speed_m_s": 9.735878562646969e-17,
+        "angular_speed_rad_s": 5.06728996184514e-18
+      },
+      "controller": "reverse_rules"
+    },
+    {
+      "case": "rear-left",
+      "case_split": "train",
+      "success": false,
+      "reason": "Time limit (120 seconds)",
+      "seconds": 120.02,
+      "distance_m": 6.054563211344406,
+      "reverse_steps": 0,
+      "final_metrics": {
+        "position_error_m": 0.15701095802465756,
+        "heading_error_deg": 123.65452741776635,
+        "speed_m_s": 0.08312896599852491,
+        "angular_speed_rad_s": 0.14664410444089038
+      },
+      "controller": "forward_rules"
+    },
+    {
+      "case": "rear-left",
+      "case_split": "train",
+      "success": false,
+      "reason": "Time limit (120 seconds)",
+      "seconds": 120.02,
+      "distance_m": 5.762415079560502,
+      "reverse_steps": 217,
+      "final_metrics": {
+        "position_error_m": 0.1580217081660273,
+        "heading_error_deg": 21.815677486112463,
+        "speed_m_s": 0.06510843446921313,
+        "angular_speed_rad_s": 0.14667189441158057
+      },
+      "controller": "reverse_rules"
+    },
+    {
+      "case": "rear-right-eval",
+      "case_split": "evaluation",
+      "success": false,
+      "reason": "Time limit (120 seconds)",
+      "seconds": 120.02,
+      "distance_m": 6.054563211344408,
+      "reverse_steps": 0,
+      "final_metrics": {
+        "position_error_m": 0.15701095802465823,
+        "heading_error_deg": 123.65452741776647,
+        "speed_m_s": 0.08312896599852496,
+        "angular_speed_rad_s": 0.14664410444089007
+      },
+      "controller": "forward_rules"
+    },
+    {
+      "case": "rear-right-eval",
+      "case_split": "evaluation",
+      "success": false,
+      "reason": "Time limit (120 seconds)",
+      "seconds": 120.02,
+      "distance_m": 5.762415079560507,
+      "reverse_steps": 217,
+      "final_metrics": {
+        "position_error_m": 0.15802170816602823,
+        "heading_error_deg": 21.815677486112108,
+        "speed_m_s": 0.06510843446921333,
+        "angular_speed_rad_s": 0.14667189441157835
+      },
+      "controller": "reverse_rules"
+    },
+    {
+      "case": "rotated-eval",
+      "case_split": "evaluation",
+      "success": false,
+      "reason": "Time limit (120 seconds)",
+      "seconds": 120.02,
+      "distance_m": 5.965750661744755,
+      "reverse_steps": 0,
+      "final_metrics": {
+        "position_error_m": 0.14772897437488852,
+        "heading_error_deg": 145.50652197486502,
+        "speed_m_s": 0.04019272370250917,
+        "angular_speed_rad_s": 0.1673699220336251
+      },
+      "controller": "forward_rules"
+    },
+    {
+      "case": "rotated-eval",
+      "case_split": "evaluation",
+      "success": true,
+      "reason": "Position + heading matched; stopped for one second",
+      "seconds": 5.66,
+      "distance_m": 0.9607787188487628,
+      "reverse_steps": 234,
+      "final_metrics": {
+        "position_error_m": 0.03929187391132183,
+        "heading_error_deg": 5.088887490341627e-14,
+        "speed_m_s": 2.4354778457069483e-16,
+        "angular_speed_rad_s": 2.4936870952846108e-18
+      },
+      "controller": "reverse_rules"
+    }
+  ],
+  "model_training_source": null,
+  "learned_policy_evaluated": false,
+  "note": "Same initial scenes and pose criteria for each controller. Rules here add final heading alignment; older position-only timings are not directly comparable."
+}
