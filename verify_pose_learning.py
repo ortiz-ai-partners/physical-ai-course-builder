@@ -6,6 +6,7 @@ import numpy as np
 from app import ROOT, Simulation
 from pose_task import PoseTask, PoseRecorder, pose_xml, FEATURE_NAMES
 from pose_prepare import prepare, load_dataset
+from pose_dataset import collection_summary
 from pose_bc import Policy, train_arrays, loss_and_gradient
 from pose_evaluate import run_trial, PoseBaseline
 
@@ -34,12 +35,16 @@ def main():
     test_root = ROOT/'.test-results'; test_root.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=test_root, prefix='learning-fixtures-') as temp:
         folder = Path(temp)
+        assert not collection_summary(folder)['ready_for_first_trial']
         try: prepare(folder, folder/'empty.npz'); raise AssertionError('Empty data trained')
         except ValueError: pass
         for case in ('back', 'front'):
             for idle in (5, 15): fixture(folder, case, idle)
         original = next(folder.glob('*.jsonl'))
         (folder/'duplicate.jsonl').write_bytes(original.read_bytes())
+        counts = collection_summary(folder)
+        assert counts['unique_successes'] == {'back': 2, 'front': 2, 'rear-left': 0}
+        assert counts['duplicates'] == 1 and counts['ready_for_first_trial']
         manifest = prepare(folder, folder/'dataset.npz')
         arrays, loaded = load_dataset(folder/'dataset.npz')
         assert len(manifest['episodes']) == 4

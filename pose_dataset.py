@@ -1,5 +1,6 @@
 """Audit pose episodes without changing recordings or starting training."""
 import argparse
+from collections import Counter
 import hashlib
 import json
 from pathlib import Path
@@ -53,7 +54,23 @@ def inspect_episode(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('folder', type=Path, nargs='?', default=Path(__file__).resolve().parent/'recordings'/'pose')
+    parser.add_argument('--summary', action='store_true', help='Show collection counts and next steps in Japanese.')
     args = parser.parse_args()
+    if args.summary:
+        summary = collection_summary(args.folder)
+        names = {'back': '後退', 'front': '前進', 'rear-left': '左斜め後ろ'}
+        print('お手本の収集状況（元の記録は変更しません）\n')
+        for case, label in names.items():
+            count = summary['unique_successes'][case]
+            remaining = max(0, 2-count)
+            optional = '・後からでも可' if case == 'rear-left' and count == 0 else ''
+            print(f'{label}: 有効な成功 {count} 本 / 最初の目安 2 本 / あと {remaining} 本{optional}')
+        print(f'\n重複: {summary["duplicates"]} 本 / 対象外: {summary["excluded"]} 本 / 要点検: {len(summary["issues"])} 本')
+        for issue in summary['issues']:
+            print(f'  {issue["file"]}: {issue["reason"]}')
+        print('\n少数データでの学習試行を始める準備ができています。' if summary['ready_for_first_trial'] else '\nまず前進・後退を各2本。1本だけ成功したケースは、もう1本追加してください。')
+        print('これは分割の最低目安です。学習性能を保証する本数ではありません。学習は自動で始まりません。')
+        return 0
     reports = []
     for path in sorted(args.folder.glob('*.jsonl')):
         try: reports.append(inspect_episode(path))
@@ -61,6 +78,31 @@ def main():
             reports.append({'file': path.name, 'error': str(exc), 'eligible_for_training': False})
     print(json.dumps({'episodes': reports, 'training_started': False}, ensure_ascii=False, indent=2))
     return int(any('error' in r for r in reports))
+
+
+def collection_summary(folder):
+    from pose_prepare import encode_actions
+    counts = Counter({'back': 0, 'front': 0, 'rear-left': 0})
+    seen, issues = set(), []
+    duplicates = excluded = 0
+    for path in sorted(Path(folder).glob('*.jsonl')):
+        try:
+            raw = path.read_bytes()
+            report = inspect_episode(path)
+            if not report['eligible_for_training']:
+                excluded += 1; continue
+            digest = hashlib.sha256(raw).hexdigest()
+            if digest in seen:
+                duplicates += 1; continue
+            rows = [json.loads(line) for line in raw.decode('utf-8').splitlines() if line.strip()]
+            encode_actions(np.asarray([r['action'] for r in rows[1:-1]]))
+            seen.add(digest); counts[report['case']] += 1
+        except (ValueError, KeyError, TypeError, OSError) as exc:
+            issues.append({'file': path.name, 'reason': str(exc)})
+    ready = counts['back'] >= 2 and counts['front'] >= 2 and all(n == 0 or n >= 2 for n in counts.values())
+    return {'unique_successes': dict(counts), 'duplicates': duplicates,
+            'excluded': excluded, 'issues': issues, 'ready_for_first_trial': ready,
+            'training_started': False}
 
 
 if __name__ == '__main__': raise SystemExit(main())
