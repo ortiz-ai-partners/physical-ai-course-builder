@@ -26,6 +26,7 @@
       ],
       "planner_commit": "47b3ab572a4b7ffc314dfc2aa68b8349f061fe13",
       "high_speed_straights": false,
+      "sport_profile": false,
       "control": "feedback rules; empty only",
       "learning_performed": false
     },
@@ -55,6 +56,37 @@
       ],
       "planner_commit": "47b3ab572a4b7ffc314dfc2aa68b8349f061fe13",
       "high_speed_straights": true,
+      "sport_profile": false,
+      "control": "feedback rules; empty only",
+      "learning_performed": false
+    },
+    {
+      "case": "wide",
+      "success": true,
+      "reason": "Final error 0.112 m, 2.0 deg",
+      "seconds": 28.359999999998642,
+      "peak_km_h": 5.157306767249426,
+      "curve_peak_km_h": 2.3834148135140714,
+      "direction_changes": 0,
+      "switch_speeds_m_s": [],
+      "max_path_error_m": 0.11695015990651153,
+      "sections": [
+        [
+          "straight",
+          1
+        ],
+        [
+          "left",
+          1
+        ],
+        [
+          "straight",
+          1
+        ]
+      ],
+      "planner_commit": "47b3ab572a4b7ffc314dfc2aa68b8349f061fe13",
+      "high_speed_straights": true,
+      "sport_profile": true,
       "control": "feedback rules; empty only",
       "learning_performed": false
     },
@@ -97,6 +129,7 @@
       ],
       "planner_commit": "47b3ab572a4b7ffc314dfc2aa68b8349f061fe13",
       "high_speed_straights": false,
+      "sport_profile": false,
       "control": "feedback rules; empty only",
       "learning_performed": false
     },
@@ -139,6 +172,50 @@
       ],
       "planner_commit": "47b3ab572a4b7ffc314dfc2aa68b8349f061fe13",
       "high_speed_straights": true,
+      "sport_profile": false,
+      "control": "feedback rules; empty only",
+      "learning_performed": false
+    },
+    {
+      "case": "narrow",
+      "success": true,
+      "reason": "Final error 0.117 m, 1.9 deg",
+      "seconds": 29.659999999998384,
+      "peak_km_h": 5.157306767249426,
+      "curve_peak_km_h": 2.554258359746172,
+      "direction_changes": 4,
+      "switch_speeds_m_s": [
+        2.3764849984748817e-13,
+        3.813522045069807e-13,
+        2.5752116880949023e-13,
+        2.692723464519788e-14
+      ],
+      "max_path_error_m": 0.06951338962298681,
+      "sections": [
+        [
+          "straight",
+          1
+        ],
+        [
+          "left",
+          -1
+        ],
+        [
+          "right",
+          1
+        ],
+        [
+          "left",
+          -1
+        ],
+        [
+          "straight",
+          1
+        ]
+      ],
+      "planner_commit": "47b3ab572a4b7ffc314dfc2aa68b8349f061fe13",
+      "high_speed_straights": true,
+      "sport_profile": true,
       "control": "feedback rules; empty only",
       "learning_performed": false
     }
