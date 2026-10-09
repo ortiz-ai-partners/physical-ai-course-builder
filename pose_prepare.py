@@ -21,7 +21,14 @@ def encode_actions(actions):
     return np.stack(labels, axis=1)
 
 
-def prepare(folder, output, seed=1729):
+def trim_leading_idle(x, y):
+    moving = np.flatnonzero(np.any(y != 2, axis=1))
+    if not len(moving): raise ValueError('Episode contains no driving action')
+    cut = int(moving[0])
+    return x[cut:], y[cut:], cut
+
+
+def prepare(folder, output, seed=1729, remove_leading_idle=True):
     output = Path(output)
     if output.exists(): raise FileExistsError('Choose a new dataset output path')
     groups, skipped, seen = {}, [], set()
@@ -46,7 +53,10 @@ def prepare(folder, output, seed=1729):
             transitions = rows[1:-1]
             x = np.asarray([r['observation'] for r in transitions], dtype=np.float64)
             y = encode_actions(np.asarray([r['action'] for r in transitions]))
-            groups.setdefault(report['case'], []).append((path.name, digest, x, y))
+            cut = 0
+            if remove_leading_idle:
+                x, y, cut = trim_leading_idle(x, y)
+            groups.setdefault(report['case'], []).append((path.name, digest, x, y, cut))
         except (ValueError, KeyError, TypeError) as exc:
             skipped.append({'file': path.name, 'reason': str(exc)})
     if not groups:
@@ -59,18 +69,20 @@ def prepare(folder, output, seed=1729):
     manifest = {'schema': 'pose-dataset-v1', 'dataset_kind': 'human_pose_demos',
                 'feature_names': FEATURE_NAMES, 'split_seed': seed, 'episodes': [], 'skipped': skipped,
                 'physics_replay_required': True,
+                'remove_leading_idle': remove_leading_idle,
                 'note': 'Validation holds out whole human demonstrations. Evaluation cases are excluded entirely. Each accepted recording passed action replay.'}
     eid = 0
     for case, episodes in sorted(groups.items()):
         # Stable content-based ordering; filenames/timestamps do not decide split.
         episodes.sort(key=lambda e: hashlib.sha256(f'{seed}:{e[1]}'.encode()).hexdigest())
         validation_count = max(1, round(len(episodes)*.2))
-        for index, (name, digest, x, y) in enumerate(episodes):
+        for index, (name, digest, x, y, cut) in enumerate(episodes):
             split = 'val' if index < validation_count else 'train'
             arrays[split+'_x'].append(x); arrays[split+'_y'].append(y)
             arrays[split+'_episode'].append(np.full(len(x), eid, dtype=np.int64))
             manifest['episodes'].append({'id': eid, 'file': name, 'sha256': digest,
-                                         'case': case, 'split': split, 'frames': len(x)})
+                                         'case': case, 'split': split, 'frames': len(x),
+                                         'leading_idle_frames_removed': cut})
             eid += 1
     merged = {key: np.concatenate(values) for key, values in arrays.items()}
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -110,9 +122,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--folder', type=Path, default=Path(__file__).resolve().parent/'recordings/pose')
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--keep-leading-idle', action='store_true', help='Retain initial waiting frames for comparison.')
     args = parser.parse_args()
     try:
-        result = prepare(args.folder, args.output)
+        result = prepare(args.folder, args.output, remove_leading_idle=not args.keep_leading_idle)
     except (ValueError, FileExistsError) as exc:
         parser.exit(1, str(exc)+'\n')
     print(json.dumps({'episodes': result['episodes'], 'skipped': result['skipped'], 'training_started': False}, ensure_ascii=False, indent=2))

@@ -113,6 +113,8 @@ class PoseRecorder:
         self.file = self.path = None
         self.frames = 0
         self.saved_success = False
+        from pose_dataset import collection_summary
+        self.collection_counts = collection_summary(self.folder)['unique_successes']
 
     def write(self, row):
         if row.get('type') == 'transition':
@@ -154,3 +156,5 @@ class PoseRecorder:
                     'success': self.task.success, 'task_reason': self.task.reason,
                     'metrics': self.task.metrics})
         self.file.close(); self.file = None
+        if self.saved_success and self.source == 'keyboard_teleoperation' and self.task.config['split'] == 'train':
+            self.collection_counts[self.task.case] += 1
