@@ -27,7 +27,11 @@ def assembly_xml(scene_path):
 
 
 class SlopeAssembly:
-    def __init__(self,sim,target_x=1.5):
+    def __init__(self,sim,target_x=1.5,fast_empty=None):
+        # The 2m placement completed slower with cruise; keep its default baseline.
+        self.fast_empty=(float(target_x) in (1.,1.5)) if fast_empty is None else bool(fast_empty)
+        self.fast_steps=0
+        self.empty_peak=0.
         self.target_x=float(target_x)
         self.phase='UP'
         self.stage=self.phase
@@ -61,6 +65,9 @@ class SlopeAssembly:
         if self.phase in ('UP','DOWN','TO_DOWN','TO_START','CROSS'):
             action=self.pilot.action(sim)
             self.stage=self.phase+': '+self.pilot.stage
+            if self.phase in ('TO_DOWN','TO_START'):
+                self.empty_peak=max(self.empty_peak,float(np.linalg.norm(sim.data.qvel[:2])))
+                if abs(action[0])>1.:self.fast_steps+=1
             if self.phase=='CROSS':
                 self.max_rise=max(self.max_rise,float(sim.data.body('dozer').xpos[2])-.3)
                 for c in sim.data.contact:
@@ -86,9 +93,9 @@ class SlopeAssembly:
         if self.phase.startswith('RAISE'):
             if sim.lift_target<.49:return (0,0,1)
             if self.phase=='RAISE_UP':
-                self.phase='TO_DOWN';self.pilot=Navigator(sim,[[-3.3,-.75],[-3.3,.8]])
+                self.phase='TO_DOWN';self.pilot=Navigator(sim,[[-3.3,-.75],[-3.3,.8]],fast_empty=self.fast_empty)
             else:
-                self.phase='TO_START';self.pilot=Navigator(sim,[[-1,.75],[-1,-3.2],[self.target_x,-3.2]])
+                self.phase='TO_START';self.pilot=Navigator(sim,[[-1,.75],[-1,-3.2],[self.target_x,-3.2]],fast_empty=self.fast_empty)
             return (0,0,0)
         if self.phase=='PRECISE_LANE':
             w,x,y,z=sim.data.body('dozer').xquat
