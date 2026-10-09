@@ -102,13 +102,14 @@ def scene_xml(plan):
 
 
 class CoursePilot:
-    def __init__(self,sim,plan,empty=True,high_speed=True):
+    def __init__(self,sim,plan,empty=True,high_speed=True,sport=False):
         if not empty:raise ValueError('This high-speed experiment only accepts an empty vehicle')
         vehicle=sim.model.body('dozer').id
         if any(int(root) not in (0,vehicle) for root in sim.model.body_rootid):
             raise ValueError('Additional movable bodies are outside this empty-vehicle experiment')
         self.plan=plan;self.index=0;self.nearest=0;self.forward=0.;self.integral=0.
         self.high_speed=high_speed
+        self.sport=sport
         self.done=self.success=False;self.reason='';self.stage='READY';self.hold=0
         self.peak=0.;self.curve_peak=0.;self.switch_speeds=[];self.max_error=0.;self.traces=[]
 
@@ -154,21 +155,28 @@ class CoursePilot:
         remaining=(len(points)-1-self.nearest)*.04
         heading=wrap(points[self.nearest,2]-yaw)
         fast=sec['type']=='straight' and direction>0 and remaining>2 and abs(heading)<.08 and err<.12
-        target_f=(1.6 if self.high_speed else 1.0) if fast else (.55 if sec['type']=='straight' else .20)
-        target_f=min(target_f,max(.06,dist*.65))*direction
+        if fast:
+            target_f=1.6 if self.high_speed else 1.0
+        elif sec['type']=='straight':
+            target_f=.8 if self.sport else .55
+        else:
+            target_f=.7 if self.sport else .20
+        target_f=min(target_f,max(.06,dist*(1.1 if self.sport else .65)))*direction
         self.forward=float(np.clip(target_f,self.forward-.035,self.forward+.035))
         desired_yaw=2*(self.forward*.89)*lateral/max(dx*dx+dy*dy,.06)+.6*heading
-        desired_yaw=float(np.clip(desired_yaw,-.32,.32))
+        yaw_limit=1.0 if self.sport else .32
+        desired_yaw=float(np.clip(desired_yaw,-yaw_limit,yaw_limit))
         yaw_error=desired_yaw-float(sim.data.qvel[5]);self.integral=float(np.clip(self.integral+yaw_error*.02,-.6,.6))
-        turn=float(np.clip(3*yaw_error+2*self.integral,-1,1))
+        turn_limit=2.0 if self.sport else 1.
+        turn=float(np.clip(3*yaw_error+2*self.integral,-turn_limit,turn_limit))
         self.stage=('FAST STRAIGHT' if fast else 'CURVE' if sec['type']!='straight' else 'APPROACH')+(' / REVERSE' if direction<0 else ' / FORWARD')
         if sec['type']!='straight':self.curve_peak=max(self.curve_peak,speed)
         self.traces.append([round(float(sim.data.time),3),float(x),float(y),speed,self.forward,turn,self.index])
         return (self.forward,turn,0)
 
 
-def evaluate(plan,high_speed=True):
-    sim=Simulation(scene_xml=scene_xml(plan));pilot=CoursePilot(sim,plan,high_speed=high_speed)
+def evaluate(plan,high_speed=True,sport=False):
+    sim=Simulation(scene_xml=scene_xml(plan));pilot=CoursePilot(sim,plan,high_speed=high_speed,sport=sport)
     while not pilot.done:
         before=sim.data.qpos.copy();action=pilot.action(sim)
         assert np.array_equal(before,sim.data.qpos),'Controller directly modified positions'
@@ -178,18 +186,19 @@ def evaluate(plan,high_speed=True):
             'direction_changes':len(pilot.switch_speeds),'switch_speeds_m_s':pilot.switch_speeds,
             'max_path_error_m':pilot.max_error,'sections':[(s['type'],s['direction']) for s in plan['sections']],
             'planner_commit':UPSTREAM,'high_speed_straights':high_speed,
+            'sport_profile':sport,
             'control':'feedback rules; empty only','learning_performed':False},pilot.traces
 
 
-def view(plan,screenshot=None):
+def view(plan,screenshot=None,sport=False):
     if not glfw.init():raise RuntimeError('GLFW unavailable')
     window=None;context=None
     try:
         if screenshot:glfw.window_hint(glfw.VISIBLE,glfw.FALSE)
-        window=glfw.create_window(1280,800,'rsplan | '+plan['case']+' hairpin | physical tracking',None,None)
+        window=glfw.create_window(1280,800,'rsplan | '+plan['case']+' hairpin | '+('SPORT' if sport else 'BASELINE'),None,None)
         if not window:raise RuntimeError('Window unavailable')
         glfw.make_context_current(window);glfw.swap_interval(1)
-        sim=Simulation(scene_xml=scene_xml(plan));pilot=CoursePilot(sim,plan)
+        sim=Simulation(scene_xml=scene_xml(plan));pilot=CoursePilot(sim,plan,sport=sport)
         if screenshot:
             while not pilot.done:
                 action=pilot.action(sim)
@@ -203,7 +212,7 @@ def view(plan,screenshot=None):
             nonlocal running,pilot
             if a!=glfw.PRESS:return
             if k==glfw.KEY_SPACE:running=not running
-            if k==glfw.KEY_R:sim.reset();pilot=CoursePilot(sim,plan);running=False
+            if k==glfw.KEY_R:sim.reset();pilot=CoursePilot(sim,plan,sport=sport);running=False
         glfw.set_key_callback(window,key);last=time.perf_counter();acc=0
         while not glfw.window_should_close(window):
             glfw.poll_events()
@@ -219,7 +228,7 @@ def view(plan,screenshot=None):
             viewport=mujoco.MjrRect(0,0,width,height)
             mujoco.mjv_updateScene(sim.model,sim.data,option,None,camera,mujoco.mjtCatBit.mjCAT_ALL,scene)
             mujoco.mjr_render(viewport,scene,context)
-            text=f'RSPLAN / {plan["case"].upper()} HAIRPIN\nGeometric planning + rule control / NO LEARNING\nSpace: start/pause | R: reset | Esc: close\nGreen: forward path | Orange: reverse path\n{pilot.stage} {"(PAUSED)" if not running else ""}\nSpeed: {np.linalg.norm(sim.data.qvel[:2])*3.6:.2f} km/h | Peak: {pilot.peak*3.6:.2f}\n{pilot.reason}'
+            text=f'RSPLAN / {plan["case"].upper()} HAIRPIN / {"SPORT" if sport else "BASELINE"}\nGeometric planning + rule control / NO LEARNING\nSpace: start/pause | R: reset | Esc: close\nGreen: forward path | Orange: reverse path\n{pilot.stage} {"(PAUSED)" if not running else ""}\nSpeed: {np.linalg.norm(sim.data.qvel[:2])*3.6:.2f} km/h | Peak: {pilot.peak*3.6:.2f}\n{pilot.reason}'
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150,mujoco.mjtGridPos.mjGRID_TOPLEFT,viewport,text,'',context)
             if screenshot:
                 from PIL import Image
@@ -237,10 +246,11 @@ def view(plan,screenshot=None):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--case',choices=SCENARIOS,default='wide')
     parser.add_argument('--report',type=Path);parser.add_argument('--screenshot',type=Path)
+    parser.add_argument('--sport',action='store_true')
     args=parser.parse_args();plan=build_plan(args.case)
     if args.report:
         if args.report.exists():parser.error('Choose a new report filename')
-        report,traces=evaluate(plan);args.report.parent.mkdir(parents=True,exist_ok=True)
+        report,traces=evaluate(plan,sport=args.sport);args.report.parent.mkdir(parents=True,exist_ok=True)
         args.report.write_text(json.dumps({'plan':plan,'result':report,'trace':traces},indent=2),encoding='utf-8')
         print(json.dumps(report,indent=2));raise SystemExit(0 if report['success'] else 1)
-    view(plan,args.screenshot)
+    view(plan,args.screenshot,args.sport)
