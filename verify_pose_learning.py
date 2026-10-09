@@ -29,6 +29,7 @@ def fixture(folder, case, idle):
         if task.done: break
     assert task.success, task.metrics
     rec.stop('task_success')
+    assert rec.collection_counts[case] >= 1
 
 
 def main():
@@ -48,6 +49,15 @@ def main():
         manifest = prepare(folder, folder/'dataset.npz')
         arrays, loaded = load_dataset(folder/'dataset.npz')
         assert len(manifest['episodes']) == 4
+        for entry in manifest['episodes']:
+            rows = [json.loads(line) for line in (folder/entry['file']).read_text().splitlines()]
+            cut = entry['leading_idle_frames_removed']
+            assert cut in (5, 15)
+            selected = arrays[entry['split']+'_x'][arrays[entry['split']+'_episode'] == entry['id']]
+            assert np.array_equal(selected, np.asarray([row['observation'] for row in rows[1+cut:-1]]))
+            assert entry['frames'] == len(rows)-2-cut
+        raw_manifest = prepare(folder, folder/'untrimmed.npz', remove_leading_idle=False)
+        assert all(e['leading_idle_frames_removed'] == 0 for e in raw_manifest['episodes'])
         assert len(manifest['skipped']) == 1 and manifest['skipped'][0]['reason'] == 'Duplicate recording'
         assert not set(arrays['train_episode']) & set(arrays['val_episode'])
         for case in ('back', 'front'):
