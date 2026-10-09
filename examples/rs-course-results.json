@@ -1,0 +1,150 @@
+{
+  "trials": [
+    {
+      "case": "wide",
+      "success": true,
+      "reason": "Final error 0.119 m, 0.9 deg",
+      "seconds": 62.780000000013665,
+      "peak_km_h": 3.268461812497435,
+      "curve_peak_km_h": 0.8243072887154347,
+      "direction_changes": 0,
+      "switch_speeds_m_s": [],
+      "max_path_error_m": 0.11882413075058028,
+      "sections": [
+        [
+          "straight",
+          1
+        ],
+        [
+          "left",
+          1
+        ],
+        [
+          "straight",
+          1
+        ]
+      ],
+      "planner_commit": "47b3ab572a4b7ffc314dfc2aa68b8349f061fe13",
+      "high_speed_straights": false,
+      "control": "feedback rules; empty only",
+      "learning_performed": false
+    },
+    {
+      "case": "wide",
+      "success": true,
+      "reason": "Final error 0.115 m, 1.9 deg",
+      "seconds": 59.48000000001198,
+      "peak_km_h": 5.157306767249426,
+      "curve_peak_km_h": 0.8306329623652352,
+      "direction_changes": 0,
+      "switch_speeds_m_s": [],
+      "max_path_error_m": 0.11830173153361646,
+      "sections": [
+        [
+          "straight",
+          1
+        ],
+        [
+          "left",
+          1
+        ],
+        [
+          "straight",
+          1
+        ]
+      ],
+      "planner_commit": "47b3ab572a4b7ffc314dfc2aa68b8349f061fe13",
+      "high_speed_straights": true,
+      "control": "feedback rules; empty only",
+      "learning_performed": false
+    },
+    {
+      "case": "narrow",
+      "success": true,
+      "reason": "Final error 0.116 m, 1.9 deg",
+      "seconds": 49.920000000007086,
+      "peak_km_h": 3.3218061206711256,
+      "curve_peak_km_h": 1.157940565042955,
+      "direction_changes": 4,
+      "switch_speeds_m_s": [
+        1.226959628916573e-13,
+        9.869301648268742e-14,
+        1.4136791081193666e-13,
+        7.282971697379777e-14
+      ],
+      "max_path_error_m": 0.11458512515400608,
+      "sections": [
+        [
+          "straight",
+          1
+        ],
+        [
+          "left",
+          -1
+        ],
+        [
+          "right",
+          1
+        ],
+        [
+          "left",
+          -1
+        ],
+        [
+          "straight",
+          1
+        ]
+      ],
+      "planner_commit": "47b3ab572a4b7ffc314dfc2aa68b8349f061fe13",
+      "high_speed_straights": false,
+      "control": "feedback rules; empty only",
+      "learning_performed": false
+    },
+    {
+      "case": "narrow",
+      "success": true,
+      "reason": "Final error 0.108 m, 1.7 deg",
+      "seconds": 49.18000000000671,
+      "peak_km_h": 5.157306767249426,
+      "curve_peak_km_h": 1.0727439344445369,
+      "direction_changes": 4,
+      "switch_speeds_m_s": [
+        1.2183245378738535e-13,
+        1.4784496962388188e-13,
+        3.261629742354431e-14,
+        3.5091554178479253e-13
+      ],
+      "max_path_error_m": 0.13421318605513693,
+      "sections": [
+        [
+          "straight",
+          1
+        ],
+        [
+          "left",
+          -1
+        ],
+        [
+          "right",
+          1
+        ],
+        [
+          "left",
+          -1
+        ],
+        [
+          "straight",
+          1
+        ]
+      ],
+      "planner_commit": "47b3ab572a4b7ffc314dfc2aa68b8349f061fe13",
+      "high_speed_straights": true,
+      "control": "feedback rules; empty only",
+      "learning_performed": false
+    }
+  ],
+  "footprint_obstacle_rejected": true,
+  "unexpected_contact_stopped": true,
+  "loaded_mode_rejected": true,
+  "scope": "Two fixed empty-vehicle courses. Not learned policy, general obstacle replanning, or loaded transport."
+}
