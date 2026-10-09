@@ -64,7 +64,7 @@ def main():
             count = summary['unique_successes'][case]
             remaining = max(0, 2-count)
             optional = '・後からでも可' if case == 'rear-left' and count == 0 else ''
-            print(f'{label}: 有効な成功 {count} 本 / 最初の目安 2 本 / あと {remaining} 本{optional}')
+            print(f'{label}: 点検済みの成功候補 {count} 本 / 最初の目安 2 本 / あと {remaining} 本{optional}')
         print(f'\n重複: {summary["duplicates"]} 本 / 対象外: {summary["excluded"]} 本 / 要点検: {len(summary["issues"])} 本')
         for issue in summary['issues']:
             print(f'  {issue["file"]}: {issue["reason"]}')
