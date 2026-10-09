@@ -36,6 +36,11 @@ def prepare(folder, output, seed=1729):
             if digest in seen:
                 skipped.append({'file': path.name, 'reason': 'Duplicate recording'})
                 continue
+            from pose_replay import evaluate as verify_replay
+            replay = verify_replay(path)
+            if not replay['replay_verified']:
+                skipped.append({'file': path.name, 'reason': replay['reason']})
+                continue
             seen.add(digest)
             rows = [json.loads(line) for line in raw.decode('utf-8').splitlines() if line.strip()]
             transitions = rows[1:-1]
@@ -45,14 +50,16 @@ def prepare(folder, output, seed=1729):
         except (ValueError, KeyError, TypeError) as exc:
             skipped.append({'file': path.name, 'reason': str(exc)})
     if not groups:
-        raise ValueError('No eligible human episodes. Record successful demonstrations first; test files are excluded.')
+        details = '; '.join(f'{item["file"]}: {item["reason"]}' for item in skipped[:5])
+        raise ValueError('No eligible human episodes. Record successful demonstrations first; test files are excluded. '+details)
     short = {case: len(items) for case, items in groups.items() if len(items) < 2}
     if short:
         raise ValueError(f'Need at least two different successful episodes per collected case: {short}')
     arrays = {key: [] for key in ('train_x', 'train_y', 'train_episode', 'val_x', 'val_y', 'val_episode')}
     manifest = {'schema': 'pose-dataset-v1', 'dataset_kind': 'human_pose_demos',
                 'feature_names': FEATURE_NAMES, 'split_seed': seed, 'episodes': [], 'skipped': skipped,
-                'note': 'Validation holds out whole human demonstrations. Evaluation cases are excluded entirely.'}
+                'physics_replay_required': True,
+                'note': 'Validation holds out whole human demonstrations. Evaluation cases are excluded entirely. Each accepted recording passed action replay.'}
     eid = 0
     for case, episodes in sorted(groups.items()):
         # Stable content-based ordering; filenames/timestamps do not decide split.

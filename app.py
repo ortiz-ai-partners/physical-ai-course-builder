@@ -116,7 +116,7 @@ class Recorder:
             self.file = None
 
 
-def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False, slope_plan=None, maneuver_mode=None, pose_case=None):
+def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False, slope_plan=None, maneuver_mode=None, pose_case=None, replay_rows=None):
     if not glfw.init():
         raise RuntimeError('OpenGL window could not initialize.')
     window = None
@@ -141,6 +141,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             title = 'Empty vehicle | '+maneuver_mode+' | rule control'
         if pose_case:
             title = 'Pose practice | '+pose_case+' | human demonstration'
+        if replay_rows:
+            title = 'Recorded actions replay | '+replay_rows[0]['case']+' | no learning'
         window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
@@ -153,6 +155,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         if pose_case:
             from pose_task import pose_xml
             custom_xml = pose_xml(ROOT/'scene_fork_tracks.xml', pose_case)
+        if replay_rows:
+            custom_xml = replay_rows[0]['scene_xml']
         if move_slope:
             from slope_transport import slope_transport_xml
             custom_xml = slope_transport_xml(ROOT/'scene_fork_tracks.xml', move_slope)
@@ -166,6 +170,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             pose_task = PoseTask(sim, pose_case)
             recorder = PoseRecorder(pose_task, custom_xml, ROOT/'recordings'/'pose')
         pilot = None
+        if replay_rows:
+            from pose_replay import PoseReplay
+            pilot = PoseReplay(sim, replay_rows)
         if maneuver_mode:
             from navigation import Navigator
             pilot = Navigator(sim, [[-1, 0]], allow_reverse=maneuver_mode == 'reverse-enabled')
@@ -193,7 +200,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
         if pilot:
             if screenshot:
                 while not pilot.done:
-                    sim.step(*pilot.action(sim))
+                    action = pilot.action(sim)
+                    if replay_rows and pilot.done: break
+                    sim.step(*action)
         camera = mujoco.MjvCamera()
         mujoco.mjv_defaultCamera(camera)
         camera.lookat[:] = [-0.3, 0, 0.1]
@@ -212,7 +221,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             if action == glfw.PRESS:
                 if pose_case and key in (glfw.KEY_T, glfw.KEY_SPACE, glfw.KEY_LEFT_SHIFT, glfw.KEY_RIGHT_SHIFT):
                     return
-                if (layout or ramp or portable_ramp or move_slope or build_slopes or maneuver_mode) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
+                if (layout or ramp or portable_ramp or move_slope or build_slopes or maneuver_mode or replay_rows) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
                     return
                 keys.add(key)
                 if key == glfw.KEY_ESCAPE:
@@ -308,6 +317,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                     action[1] *= 0.3
                 if pilot:
                     action = pilot.action(sim)
+                    if replay_rows and pilot.done:
+                        ui['paused'] = True
+                        continue
                 if pose_task:
                     action[2] = 0
                     if action[1]:
@@ -370,6 +382,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                     left = 'CHAT AI PLAN / RULE EXECUTION\n\nPlan name: see window title\nPlace UP > Place DOWN > Cross\nNo fresh inference during replay\nTarget X: '+str(slope_plan['parts'][0]['x'])+' m\nP: pause / resume | Esc: close'
                 if maneuver_mode:
                     left = 'EMPTY VEHICLE / RULE BASELINE\n\n'+maneuver_mode.upper()+'\nTarget: 1 m behind the initial vehicle\nGreen circle: target position\nNo learning / No API\nP: pause / resume | Esc: close'
+                if replay_rows:
+                    left = 'RECORDED ACTION REPLAY / NO LEARNING\n\nActions are re-executed through physics\nNo per-frame position restoration\nRecording result: '+('SUCCESS' if replay_rows[-1]['success'] else 'NOT SUCCESSFUL')+'\nP: pause / resume | Esc: close'
                 right = ''
                 ui['message'] = f"{pilot.stage} {'(PAUSED)' if ui['paused'] else ''} | {pilot.reason}"
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
@@ -385,7 +399,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             glfw.swap_buffers(window)
             if smoke and now - started > 3:
                 break
-        return 0
+        return 1 if replay_rows and pilot.done and not pilot.success else 0
     finally:
         recorder.stop('window_closed')
         if context:
@@ -410,7 +424,17 @@ if __name__ == '__main__':
     parser.add_argument('--slope-plan', type=Path, help='Validate and replay a saved AI plan for slope construction.')
     parser.add_argument('--maneuver', choices=('forward-only', 'reverse-enabled'), help='Empty-vehicle direction-choice comparison.')
     parser.add_argument('--pose-practice', choices=('back', 'front', 'rear-left', 'rear-right-eval', 'rotated-eval'), help='Record human pose-goal demonstrations in a separate folder.')
+    parser.add_argument('--replay-pose', type=Path, help='Physically replay a completed pose recording.')
     args = parser.parse_args()
+    replay_rows = None
+    if args.replay_pose:
+        if any((args.pose_practice, args.move_slope, args.layout, args.plan, args.build, args.assemble, args.ramp, args.portable_ramp, args.build_slopes, args.slope_plan, args.maneuver)):
+            parser.error('--replay-pose is an independent read-only replay')
+        from pose_replay import load_episode
+        try:
+            replay_rows = load_episode(args.replay_pose)
+        except (ValueError, KeyError, TypeError, OSError) as exc:
+            parser.error(str(exc))
     if args.pose_practice and any((args.move_slope, args.layout, args.plan, args.build, args.assemble, args.ramp, args.portable_ramp, args.build_slopes, args.slope_plan, args.maneuver)):
         parser.error('--pose-practice is an independent human demonstration task')
     if args.maneuver and any((args.move_slope, args.layout, args.plan, args.build, args.assemble, args.ramp, args.portable_ramp, args.build_slopes, args.slope_plan)):
@@ -449,4 +473,4 @@ if __name__ == '__main__':
         from ai_plan import load_plan
         driving_plan = load_plan(args.plan)
         target_layout = driving_plan['layout']
-    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp, args.move_slope, args.build_slopes, slope_plan, args.maneuver, args.pose_practice))
+    raise SystemExit(run(args.screenshot, args.smoke, target_layout, 'gate' if args.assemble else args.build, driving_plan, args.ramp, args.portable_ramp, args.move_slope, args.build_slopes, slope_plan, args.maneuver, args.pose_practice, replay_rows))

@@ -133,6 +133,9 @@ class PoseRecorder:
         self.file = self.path.open('x', encoding='utf-8')
         self.frames = 0
         self.saved_success = False
+        state_type = mujoco.mjtState.mjSTATE_INTEGRATION
+        integration = np.empty(mujoco.mj_stateSize(sim.model, state_type))
+        mujoco.mj_getState(sim.model, sim.data, integration, state_type)
         self.write({'type': 'header', 'schema': 'pose-demo-v1', 'case': self.task.case,
                     'split': self.task.config['split'], 'source': self.source,
                     'engine_version': mujoco.__version__, 'control_dt': .02,
@@ -140,6 +143,7 @@ class PoseRecorder:
                     'actions': ['forward', 'turn_left', 'lift_up'],
                     'scene_sha256': hashlib.sha256(self.scene_xml.encode()).hexdigest(),
                     'scene_xml': self.scene_xml, 'initial_state': sim.observe(),
+                    'integration_state': integration.tolist(),
                     'success_criteria': {'position_m': .08, 'heading_deg': 8,
                                          'speed_m_s': .03, 'yaw_speed_rad_s': .04, 'hold_seconds': 1}})
 
