@@ -93,6 +93,8 @@ def evaluate(path):
                 reason=pilot.reason, simulation_seconds=round(sim.data.time, 2),
                 placement_errors_m=errors, transported_parts=pilot.results,
                 contacted_surface_count=len(pilot.touched), vehicle_rise_m=pilot.max_rise,
+                fast_empty_transfers=pilot.fast_empty, fast_command_steps=pilot.fast_steps,
+                empty_transfer_peak_km_h=pilot.empty_peak*3.6,
                 final_state=sim.observe(),
                 note='AI authored a saved plan in chat; replay performs no new inference. Construction performed means attempted; inspect success.')
 

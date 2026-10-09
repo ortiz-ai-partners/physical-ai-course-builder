@@ -1,0 +1,83 @@
+[
+  {
+    "target": 1.0,
+    "fast_empty": false,
+    "success": true,
+    "reason": "Placed 2 slopes; crossed 4/4 surfaces; rise 0.440 m",
+    "seconds": 166.36,
+    "fast_steps": 0,
+    "empty_peak_kmh": 2.1865089874354293,
+    "errors": {
+      "up_1": 0.01877308251893989,
+      "down_1": 0.014625499524736367
+    }
+  },
+  {
+    "target": 1.0,
+    "fast_empty": true,
+    "success": true,
+    "reason": "Placed 2 slopes; crossed 4/4 surfaces; rise 0.440 m",
+    "seconds": 165.16,
+    "fast_steps": 45,
+    "empty_peak_kmh": 4.339439617768453,
+    "errors": {
+      "up_1": 0.01654318175163442,
+      "down_1": 0.0139552591842339
+    },
+    "seconds_saved": 1.2
+  },
+  {
+    "target": 1.5,
+    "fast_empty": false,
+    "success": true,
+    "reason": "Placed 2 slopes; crossed 4/4 surfaces; rise 0.440 m",
+    "seconds": 203.0,
+    "fast_steps": 0,
+    "empty_peak_kmh": 2.131179571225065,
+    "errors": {
+      "up_1": 0.0163385969271176,
+      "down_1": 0.013056006229492278
+    }
+  },
+  {
+    "target": 1.5,
+    "fast_empty": true,
+    "success": true,
+    "reason": "Placed 2 slopes; crossed 4/4 surfaces; rise 0.440 m",
+    "seconds": 202.06,
+    "fast_steps": 51,
+    "empty_peak_kmh": 4.401611728476057,
+    "errors": {
+      "up_1": 0.016230337212716852,
+      "down_1": 0.013527719186591042
+    },
+    "seconds_saved": 0.94
+  },
+  {
+    "target": 2.0,
+    "fast_empty": false,
+    "success": true,
+    "reason": "Placed 2 slopes; crossed 4/4 surfaces; rise 0.440 m",
+    "seconds": 200.22,
+    "fast_steps": 0,
+    "empty_peak_kmh": 2.1540378679962826,
+    "errors": {
+      "up_1": 0.017473595318557543,
+      "down_1": 0.013099017768792647
+    }
+  },
+  {
+    "target": 2.0,
+    "fast_empty": true,
+    "success": true,
+    "reason": "Placed 2 slopes; crossed 4/4 surfaces; rise 0.440 m",
+    "seconds": 207.68,
+    "fast_steps": 60,
+    "empty_peak_kmh": 4.450912456274671,
+    "errors": {
+      "up_1": 0.01610366833818728,
+      "down_1": 0.012836244885266647
+    },
+    "seconds_saved": -7.46
+  }
+]
