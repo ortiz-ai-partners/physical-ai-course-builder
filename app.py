@@ -366,7 +366,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                 m = pose_task.metrics
                 left = 'POSE PRACTICE / HUMAN DEMO\n\nCase: '+pose_case+'\nWASD / hold Q: slow\nF: record / finish | R: retry\nP: pause | 2: top view | Esc: close\nMatch green position AND arrow direction\nStop: 1 second / Auto-save on completion'
                 counts = recorder.collection_counts
-                left += f'\n\nSaved success candidates\nBack: {counts["back"]} / Front: {counts["front"]} / Rear-left: {counts["rear-left"]}\nNext collection checkpoint: 10 per straight case\nCount is not a guarantee of learned skill'
+                left += f'\n\nSaved success candidates\nBack: {counts["back"]} / Front: {counts["front"]} / Rear-left: {counts["rear-left"]}\nCounts only / collect more when requested\nCount is not a guarantee of learned skill'
                 right = ''
                 result = ('SUCCESS - SAVED' if recorder.saved_success else 'SUCCESS - NOT RECORDED; R to retry') if pose_task.success else 'STOPPED; R to retry' if pose_task.done else 'RECORDING' if recorder.file else 'PRACTICE - NOT RECORDING'
                 ui['message'] = f'{result} | Position: {m["position_error_m"]:.3f}/0.080 m | Heading: {m["heading_error_deg"]:.1f}/8 deg | Hold: {pose_task.hold_seconds:.1f}/1 s'
