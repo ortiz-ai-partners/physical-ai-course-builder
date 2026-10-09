@@ -116,7 +116,7 @@ class Recorder:
             self.file = None
 
 
-def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False, slope_plan=None, maneuver_mode=None, pose_case=None, replay_rows=None):
+def run(screenshot=None, smoke=False, layout=None, construction=False, driving_plan=None, ramp=False, portable_ramp=False, move_slope=None, build_slopes=False, slope_plan=None, maneuver_mode=None, pose_case=None, replay_rows=None, pose_view=None):
     if not glfw.init():
         raise RuntimeError('OpenGL window could not initialize.')
     window = None
@@ -143,6 +143,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             title = 'Pose practice | '+pose_case+' | human demonstration'
         if replay_rows:
             title = 'Recorded actions replay | '+replay_rows[0]['case']+' | no learning'
+        if pose_view:
+            title = 'Pose evaluation | '+pose_view[0]+' | '+pose_view[2].replace('\n', ' | ')
         window = glfw.create_window(1280, 800, title, None, None)
         if not window:
             raise RuntimeError('Could not create OpenGL window. Check the graphics driver.')
@@ -157,6 +159,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             custom_xml = pose_xml(ROOT/'scene_fork_tracks.xml', pose_case)
         if replay_rows:
             custom_xml = replay_rows[0]['scene_xml']
+        if pose_view:
+            from pose_task import pose_xml
+            custom_xml = pose_xml(ROOT/'scene_fork_tracks.xml', pose_view[0])
         if move_slope:
             from slope_transport import slope_transport_xml
             custom_xml = slope_transport_xml(ROOT/'scene_fork_tracks.xml', move_slope)
@@ -170,6 +175,9 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             pose_task = PoseTask(sim, pose_case)
             recorder = PoseRecorder(pose_task, custom_xml, ROOT/'recordings'/'pose')
         pilot = None
+        if pose_view:
+            from pose_view import PosePilot
+            pilot = PosePilot(sim, pose_view[0], pose_view[1])
         if replay_rows:
             from pose_replay import PoseReplay
             pilot = PoseReplay(sim, replay_rows)
@@ -201,7 +209,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             if screenshot:
                 while not pilot.done:
                     action = pilot.action(sim)
-                    if replay_rows and pilot.done: break
+                    if (replay_rows or pose_view) and pilot.done: break
                     sim.step(*action)
         camera = mujoco.MjvCamera()
         mujoco.mjv_defaultCamera(camera)
@@ -221,7 +229,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             if action == glfw.PRESS:
                 if pose_case and key in (glfw.KEY_T, glfw.KEY_SPACE, glfw.KEY_LEFT_SHIFT, glfw.KEY_RIGHT_SHIFT):
                     return
-                if (layout or ramp or portable_ramp or move_slope or build_slopes or maneuver_mode or replay_rows) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
+                if (layout or ramp or portable_ramp or move_slope or build_slopes or maneuver_mode or replay_rows or pose_view) and key not in ((glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2, glfw.KEY_P) if pilot else (glfw.KEY_ESCAPE, glfw.KEY_1, glfw.KEY_2)):
                     return
                 keys.add(key)
                 if key == glfw.KEY_ESCAPE:
@@ -317,7 +325,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                     action[1] *= 0.3
                 if pilot:
                     action = pilot.action(sim)
-                    if replay_rows and pilot.done:
+                    if (replay_rows or pose_view) and pilot.done:
                         ui['paused'] = True
                         continue
                 if pose_task:
@@ -384,6 +392,8 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                     left = 'EMPTY VEHICLE / RULE BASELINE\n\n'+maneuver_mode.upper()+'\nTarget: 1 m behind the initial vehicle\nGreen circle: target position\nNo learning / No API\nP: pause / resume | Esc: close'
                 if replay_rows:
                     left = 'RECORDED ACTION REPLAY / NO LEARNING\n\nActions are re-executed through physics\nNo per-frame position restoration\nRecording result: '+('SUCCESS' if replay_rows[-1]['success'] else 'NOT SUCCESSFUL')+'\nP: pause / resume | Esc: close'
+                if pose_view:
+                    left = 'POSE EVALUATION\n\n'+pose_view[2]+'\nCase: '+pose_view[0]+'\nTarget: position 8 cm / heading 8 deg\nStop for one second\nP: pause / resume | Esc: close'
                 right = ''
                 ui['message'] = f"{pilot.stage} {'(PAUSED)' if ui['paused'] else ''} | {pilot.reason}"
             mujoco.mjr_overlay(mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
@@ -399,7 +409,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
             glfw.swap_buffers(window)
             if smoke and now - started > 3:
                 break
-        return 1 if replay_rows and pilot.done and not pilot.success else 0
+        return 1 if (replay_rows or pose_view) and pilot.done and not pilot.success else 0
     finally:
         recorder.stop('window_closed')
         if context:

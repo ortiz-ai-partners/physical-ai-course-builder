@@ -68,6 +68,16 @@ Fを押さずに練習した場合は **PRACTICE - NOT RECORDING**、成功し�
 
 `python verify_pose_learning.py` で実演単位の分割、重複除外、混入拒否、勾配計算、モデル保存・再読込、物理評価への接続を検査します。検査は使い捨ての模擬記録と数値データだけで行い、人のロボット操作を学習した成果とは扱いません。モデル・生データはGitから除外しています。
 
+学習後のモデルの動きは `pose_view.py` で表示できます。同じケースでルールの動きも表示可能です。Pで一時停止、Escで終了し、成功・失敗時は結果の状態で止まります。表示中に重みの更新はしません。モデルの学習元を画面に表示し、記録再生・ルール・ローカルモデル推論を区別します。
+
+```powershell
+.\.venv\Scripts\python.exe pose_view.py --rules reverse --case back
+.\.venv\Scripts\python.exe pose_view.py --model .test-results/pose-model-01.npz --case rear-right-eval
+.\.venv\Scripts\python.exe verify_pose_view.py
+```
+
+人のお手本のモデルはまだありません。表示用制御と描画なし評価の一致は、前後進ルールの3条件および停止しか出力しない未学習テストモデルで確認しています。この試験を学習成功とは扱いません。
+
 ### 前進・後退の位置目標だけの比較
 
 `reverse-demo.cmd` は、真後ろ1mの緑の目標にバックで近づいて停止します。`forward-only-demo.cmd` は同じ条件を従来の前進だけで走ります。どちらもPで一時停止、Escで終了。`python app.py --maneuver reverse-enabled` / `--maneuver forward-only` でも起動できます。
