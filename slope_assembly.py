@@ -9,7 +9,11 @@ from navigation import Navigator
 # Calibrated staging estimate for this scene, not a general vehicle model.
 # Actual heading is checked again by Transport before lifting the second part.
 TURN_LATERAL_ESTIMATE = 0.164
-INSTALLATION_GAP = 0.05
+# Nominal joint between the two landings.  0.05 until 2026-10-28; the placed gap came out at 4.0-4.5 cm and a
+# walking Microduck's foot dropped into it on about half of its crossings (3-body project).  The placement
+# error in y is a few mm (up_1 y -1.00, down_1 y 1.05 in the built stage), so 0.01 keeps the landings from
+# overlapping while closing the slot (ゆうころ 10/28: 峠の隙間を作らないブルドーザーの技術).
+INSTALLATION_GAP = 0.01
 
 
 def assembly_xml(scene_path):
@@ -116,6 +120,6 @@ class SlopeAssembly:
         if self.phase=='LOWER':
             if sim.lift_target>0:return (0,0,-1)
             self.phase='DOWN'
-            self.pilot=Transport(sim,{'x':self.target_x,'y':1.05},'down_1',1.28,2.05,lane_y=.8,align_before_lift=True)
+            self.pilot=Transport(sim,{'x':self.target_x,'y':1+INSTALLATION_GAP},'down_1',1.28,2.05,lane_y=.8,align_before_lift=True)
             return (0,0,0)
         raise RuntimeError(self.phase)

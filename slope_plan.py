@@ -13,8 +13,8 @@ CAPABILITIES = {
     'target_x_choices_m': [1.0, 1.5, 2.0],
     'parts': [
         {'id': 'up_1', 'kind': 'up', 'y': -1.0, 'yaw': 0},
-        {'id': 'down_1', 'kind': 'down', 'y': 1.05, 'yaw': 0}],
-    'top_height_m': 0.44, 'nominal_joint_gap_m': 0.05,
+        {'id': 'down_1', 'kind': 'down', 'y': 1.01, 'yaw': 0}],
+    'top_height_m': 0.44, 'nominal_joint_gap_m': 0.01,       # 0.05 until 2026-10-28 (see slope_assembly.INSTALLATION_GAP)
     'construction_order': ['up_1', 'down_1'],
     'crossing_direction': 'positive_y',
     'initial_storage': 'x=-1.5, same y as targets; vehicle=(-3,-0.75)',
@@ -49,7 +49,7 @@ def validate_plan(value):
         if any(not number(part[k]) for k in ('x', 'y', 'yaw')):
             raise ValueError('Part coordinates must be finite numbers')
         if any(part[k] != expected[k] for k in expected):
-            raise ValueError('Unsupported part/orientation/joint: up y=-1, down y=1.05, yaw=0 required')
+            raise ValueError('Unsupported part/orientation/joint: up y=-1, down y=1.01, yaw=0 required')
         if part['x'] not in CAPABILITIES['target_x_choices_m']:
             raise ValueError('Unsupported target x: choose 1.0, 1.5, or 2.0 m')
     if parts[0]['x'] != parts[1]['x']:

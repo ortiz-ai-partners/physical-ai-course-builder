@@ -387,7 +387,7 @@ def run(screenshot=None, smoke=False, layout=None, construction=False, driving_p
                 if move_slope:
                     left = f'SINGLE {move_slope.upper()} SLOPE / RULE CONTROL\n\nLift > Carry > Place\nOffset pickup rail / no weld\nTop: 0.44 m / provisional mass: 1.5 kg\nP: pause / resume | Esc: close'
                 if build_slopes:
-                    left = 'BUILD TWO SLOPES / RULE CONTROL\n\nPlace UP > Place DOWN > Cross\nOne simulation / no teleport or weld\nTop: 0.44 m / nominal joint gap: 0.05 m\nP: pause / resume | Esc: close'
+                    left = 'BUILD TWO SLOPES / RULE CONTROL\n\nPlace UP > Place DOWN > Cross\nOne simulation / no teleport or weld\nTop: 0.44 m / nominal joint gap: 0.01 m\nP: pause / resume | Esc: close'
                 if slope_plan:
                     left = 'CHAT AI PLAN / RULE EXECUTION\n\nPlan name: see window title\nPlace UP > Place DOWN > Cross\nNo fresh inference during replay\nTarget X: '+str(slope_plan['parts'][0]['x'])+' m\nP: pause / resume | Esc: close'
                 if maneuver_mode:
