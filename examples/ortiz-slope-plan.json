@@ -10,6 +10,6 @@
   "crossing_direction": "positive_y",
   "provenance": {
     "source": "Codex chat AI / Ortiz",
-    "note": "このチャットで部品と制御の制約を読み、名前・配置案・理由を生成した。モデルIDは未確認。保存計画の再実行では新しいAI推論をしない。継ぎ目 1 cm 化（commit ea5b4e7）に合わせ、down_1 の y を 1.05→1.01 に手で更新した。rationale は LLM の原文のまま。"
+    "note": "このチャットで部品と制御の制約を読み、名前・配置案・理由を生成した。モデルIDは未確認。保存計画の再実行では新しいAI推論をしない。継ぎ目 1 cm 化（commit 483dbf9）に合わせ、down_1 の y を 1.05→1.01 に手で更新した。rationale は LLM の原文のまま。"
   }
 }

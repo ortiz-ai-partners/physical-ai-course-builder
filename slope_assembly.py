@@ -9,7 +9,7 @@ from navigation import Navigator
 # Calibrated staging estimate for this scene, not a general vehicle model.
 # Actual heading is checked again by Transport before lifting the second part.
 TURN_LATERAL_ESTIMATE = 0.164
-# Nominal joint between the two landings.  0.05 before commit ea5b4e7; the placed gap came out at 4.0-4.5 cm and
+# Nominal joint between the two landings.  0.05 before commit 483dbf9; the placed gap came out at 4.0-4.5 cm and
 # a walking Microduck's foot dropped into it on about half of its crossings (3-body project).  The placement
 # error in y is a few mm (up_1 y -1.00, down_1 y 1.05 in the built stage), so 0.01 keeps the landings from
 # overlapping while closing the slot (requirement: the bulldozer must close the pass without leaving a gap).

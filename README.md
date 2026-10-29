@@ -22,7 +22,7 @@ Course-builder = the short name mujoco_3body uses for this repository (`v6_commo
 - 本リポジトリは、提出動画に登場するブルドーザー（BZ）の施工・走行を担う土台である。坂 2 枚を運んで峠を組み、自分で渡るまでがここで実装されている。
 - 提出動画、3 体（ブルドーザー・パッカン（Microduck, Pollen Robotics）・跳跳（Jumper, KingKong Robotics））の連携、支配人 AI と気分ネットは別リポジトリ [mujoco_3body](https://github.com/ortiz-ai-partners/mujoco-3body) にある。
 - 両リポジトリは同一作者（GitHub アカウント ortiz-ai-partners）が同じ最終課題のために作成した自作で、コードと文書の作成に LLM の支援を使った（「AI の使い方」節）。
-- mujoco_3body は隣接ディレクトリに置いた本リポジトリをそのまま import する。提出動画と評価は本リポジトリの commit ea5b4e7（継ぎ目 1 cm）で作られた（mujoco_3body の `docs/reproduce.md`）。
+- mujoco_3body は隣接ディレクトリに置いた本リポジトリをそのまま import する。提出動画と評価は本リポジトリの commit 483dbf9（継ぎ目 1 cm）で作られた（mujoco_3body の `docs/reproduce.md`）。
 
 ## まず試す
 
@@ -161,7 +161,7 @@ python verify_pose_task.py && python verify_pose_replay.py && python verify_pose
 ```
 
 人のお手本 5 本（後退 3・前進 2）で初回の学習を行った。先頭の停止フレームを除いたモデルは前後進するが、位置誤差は後退で 8.51 cm・前進で 22.06 cm で、8 cm の基準には届かなかった。
-出所は DEVELOPMENT.md の記録（誤差）と、commit ea5b4e7 時点の README.md（本数の内訳）である。
+出所は DEVELOPMENT.md の記録（誤差）と、commit 483dbf9 時点の README.md（本数の内訳）である。
 記録とモデルは Git の対象外で同梱していないため、この数値は再計算できない。少数の固定開始条件での結果で、一般化や安定走行は確認していない。この結果の受け止めは「反省・考察」節に書く。
 
 ### 完成形をドラッグして設計する
@@ -196,7 +196,7 @@ python verify_pose_task.py && python verify_pose_replay.py && python verify_pose
 
 ## mujoco_3body からの利用
 
-mujoco_3body は本リポジトリのコードを改変せずに読み込み、ブルドーザーの施工・走行をそのまま使う。使用した版は commit ea5b4e7（継ぎ目 1 cm）である。
+mujoco_3body は本リポジトリのコードを改変せずに読み込み、ブルドーザーの施工・走行をそのまま使う。使用した版は commit 483dbf9（継ぎ目 1 cm）である。
 
 - `v6_common.course_builder()` が本リポジトリのパスを `sys.path` に加え、`app`（`Simulation`、`ROOT`）、`slope_assembly`（`assembly_xml`、`SlopeAssembly`）、`tracks` を import する。
 - 土台のシーンは `slope_assembly.assembly_xml(app.ROOT / "scene_fork_tracks.xml")` で、車両・待機位置の箱 2 個・置き場の坂 2 枚を含む。mujoco_3body 側はこの XML に 2 体のロボットを MjSpec で結合する（`v6_robots.py` の `spec.attach`）。
@@ -280,7 +280,7 @@ mujoco_3body 側は TO_START に入った瞬間に同じ設定の `Navigator` �
 - **継ぎ目を施工精度で詰めた。** 公称 5 cm の継ぎ目は、施工後に幅全体で 4.0〜4.5 cm の溝になり、mujoco_3body で歩くパッカンの足が渡る回数の約半分で溝に落ちた（環境の不備）。
   設置の y 誤差は数 mm にとどまる（旧コースの施工で上り y −1.00・下り y 1.05、`slope_assembly.py` の注記）。そこで公称を 1 cm にしても天面は重ならないと判断し、溝を閉じる設計に変えた。
   1 cm での再施工は 4/4 面・上昇 0.440 m・199.3 s、設置位置は上り y −0.999・下り y 1.009、継ぎ目の実測は 0.25〜1.25 cm（下り坂が 0.6 度傾いて置かれたため幅方向で変わる）。
-  パッカンの継ぎ目通過は 8/8 でつまずき 0 だった（以前は約半数でつまずいた。commit ea5b4e7 のメッセージ、`slope_assembly.py` の `INSTALLATION_GAP`）。
+  パッカンの継ぎ目通過は 8/8 でつまずき 0 だった（以前は約半数でつまずいた。commit 483dbf9 のメッセージ、`slope_assembly.py` の `INSTALLATION_GAP`）。
 - **持ち上げる前に向きを合わせる。** 2 個目のパーツを差し込むときにヨー角が残り、積載後の横補正で荷が回って継ぎ目に乗り上げた。
   爪を差した後に向きを合わせ、30 ステップの安定を待ってから持ち上げ、その位置を搬送レーンにして余計な横補正を抑えた（`transport.py` の `align_before_lift`、DEVELOPMENT.md の記録）。
 - **外から渡される計画は物理の前で検査する。** 計画 JSON は厳密なキー集合・有限数・テンプレート一致を検査し、11 種の不正案を拒否して理由を返す。計画の SHA-256 を結果に残し、計画からコードを実行する経路を持たない（`slope_plan.py`）。
@@ -324,7 +324,7 @@ mujoco_3body 側は TO_START に入った瞬間に同じ設定の `Navigator` �
 本リポジトリ単体では学習済みモデルを同梱しない。提出動画で本番の推論を行う AI は mujoco_3body にある。
 自作の 2 つは支配人 AI（固定ルール／表形式 Q／PPO）と気分ネットで、既製の 5 本はパッカンの velstand・alpha_sitstand、跳跳の locomotion・jump・dance_crab である（推論のみ）。
 コードと文書の作成には対話型 LLM の支援を使った。初期開発の計画役は Codex の対話型セッションで、モデル ID は未確認である（`examples/ortiz-gate-plan.json` の `provenance.model_id` が `not verified`、`examples/ortiz-slope-plan.json` の `provenance.note`）。
-DEVELOPMENT.md は同じ対話型セッションの作業報告を、チャットの直接引用と非公開の作業ノートへのリンクを除いて原文のまま収めたものである。継ぎ目の変更（commit ea5b4e7）と本 README の書き直しは Claude の支援で行った。設計判断と検証の責任は作者にある。
+DEVELOPMENT.md は同じ対話型セッションの作業報告を、チャットの直接引用と非公開の作業ノートへのリンクを除いて原文のまま収めたものである。継ぎ目の変更（commit 483dbf9）と本 README の書き直しは Claude の支援で行った。設計判断と検証の責任は作者にある。
 
 ## 物理モデルの範囲
 
