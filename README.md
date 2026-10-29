@@ -324,7 +324,7 @@ mujoco_3body 側は TO_START に入った瞬間に同じ設定の `Navigator` �
 本リポジトリ単体では学習済みモデルを同梱しない。提出動画で本番の推論を行う AI は mujoco_3body にある。
 自作の 2 つは支配人 AI（固定ルール／表形式 Q／PPO）と気分ネットで、既製の 5 本はパッカンの velstand・alpha_sitstand、跳跳の locomotion・jump・dance_crab である（推論のみ）。
 コードと文書の作成には対話型 LLM の支援を使った。初期開発の計画役は Codex の対話型セッションで、モデル ID は未確認である（`examples/ortiz-gate-plan.json` の `provenance.model_id` が `not verified`、`examples/ortiz-slope-plan.json` の `provenance.note`）。
-DEVELOPMENT.md は同じ対話型セッションの作業報告を、施設の仕様などを除いて原文のまま収めたものである。継ぎ目の変更（commit ea5b4e7）と本 README の書き直しは Claude の支援で行った。設計判断と検証の責任は作者にある。
+DEVELOPMENT.md は同じ対話型セッションの作業報告を、チャットの直接引用と非公開の作業ノートへのリンクを除いて原文のまま収めたものである。継ぎ目の変更（commit ea5b4e7）と本 README の書き直しは Claude の支援で行った。設計判断と検証の責任は作者にある。
 
 ## 物理モデルの範囲
 
